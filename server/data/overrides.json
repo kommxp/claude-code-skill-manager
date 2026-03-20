@@ -1,0 +1,392 @@
+{
+  "agent-sdk-dev": {
+    "description": "Claude Agent SDK Development Plugin",
+    "category": "setup",
+    "source": "claude-plugins-official"
+  },
+  "claude-code-setup": {
+    "description": "Analyze codebases and recommend tailored Claude Code automations such as hooks, skills, MCP servers, and subagents.",
+    "category": "setup",
+    "source": "claude-plugins-official"
+  },
+  "claude-md-management": {
+    "description": "Tools to maintain and improve CLAUDE.md files - audit quality, capture session learnings, and keep project memory current.",
+    "category": "security",
+    "source": "claude-plugins-official"
+  },
+  "code-review": {
+    "description": "Automated code review for pull requests using multiple specialized agents with confidence-based scoring",
+    "category": "code-review",
+    "source": "claude-plugins-official"
+  },
+  "code-simplifier": {
+    "description": "Agent that simplifies and refines code for clarity, consistency, and maintainability while preserving functionality",
+    "category": "code-review",
+    "source": "claude-plugins-official"
+  },
+  "commit-commands": {
+    "description": "Streamline your git workflow with simple commands for committing, pushing, and creating pull requests",
+    "category": "git-workflow",
+    "source": "claude-plugins-official"
+  },
+  "example-plugin": {
+    "description": "A comprehensive example plugin demonstrating all Claude Code extension options including commands, agents, skills, hooks, and MCP servers",
+    "category": "git-workflow",
+    "source": "claude-plugins-official"
+  },
+  "explanatory-output-style": {
+    "description": "Adds educational insights about implementation choices and codebase patterns (mimics the deprecated Explanatory output style)",
+    "category": "git-workflow",
+    "source": "claude-plugins-official"
+  },
+  "feature-dev": {
+    "description": "Comprehensive feature development workflow with specialized agents for codebase exploration, architecture design, and quality review",
+    "category": "code-review",
+    "source": "claude-plugins-official"
+  },
+  "frontend-design": {
+    "description": "Frontend design skill for UI/UX implementation",
+    "category": "frontend",
+    "source": "claude-plugins-official"
+  },
+  "hookify": {
+    "description": "Easily create hooks to prevent unwanted behaviors by analyzing conversation patterns",
+    "category": "git-workflow",
+    "source": "claude-plugins-official"
+  },
+  "learning-output-style": {
+    "description": "Interactive learning mode that requests meaningful code contributions at decision points (mimics the unshipped Learning output style)",
+    "category": "output-style",
+    "source": "claude-plugins-official"
+  },
+  "playground": {
+    "description": "Creates interactive HTML playgrounds — self-contained single-file explorers with visual controls, live preview, and prompt output with copy button",
+    "category": "code-review",
+    "source": "claude-plugins-official"
+  },
+  "plugin-dev": {
+    "description": "Plugin development toolkit with skills for creating agents, commands, hooks, MCP integrations, and comprehensive plugin structure guidance",
+    "category": "git-workflow",
+    "source": "claude-plugins-official"
+  },
+  "pr-review-toolkit": {
+    "description": "Comprehensive PR review agents specializing in comments, tests, error handling, type design, code quality, and code simplification",
+    "category": "code-review",
+    "source": "claude-plugins-official"
+  },
+  "ralph-loop": {
+    "description": "Continuous self-referential AI loops for interactive iterative development, implementing the Ralph Wiggum technique. Run Claude in a while-true loop with the same prompt until task completion.",
+    "category": "git-workflow",
+    "source": "claude-plugins-official"
+  },
+  "security-guidance": {
+    "description": "Security reminder hook that warns about potential security issues when editing files, including command injection, XSS, and unsafe code patterns",
+    "category": "security",
+    "source": "claude-plugins-official"
+  },
+  "skill-creator": {
+    "description": "Create new skills, improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, update or optimize an existing skill, run evals to test a skill, or benchmark skill performance with variance analysis.",
+    "category": "git-workflow",
+    "source": "claude-plugins-official"
+  },
+  "agentic-actions-auditor": {
+    "description": "Audits GitHub Actions workflows for security vulnerabilities in AI agent integrations (Claude Code Action, Gemini CLI, OpenAI Codex, GitHub AI Inference)",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "ask-questions-if-underspecified": {
+    "description": "Clarify ambiguous requirements by asking questions before implementing. Only when invoked explicitly.",
+    "category": "testing",
+    "source": "trailofbits-skills"
+  },
+  "audit-context-building": {
+    "description": "Build deep architectural context through ultra-granular code analysis before vulnerability hunting",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "building-secure-contracts": {
+    "description": "Comprehensive smart contract security toolkit based on Trail of Bits' Building Secure Contracts framework. Includes vulnerability scanners for 6 blockchains and 5 development guideline assistants.",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "burpsuite-project-parser": {
+    "description": "Search and extract data from Burp Suite project files (.burp) for security analysis",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "claude-in-chrome-troubleshooting": {
+    "description": "Diagnose and fix Claude in Chrome MCP extension connectivity issues",
+    "category": "integration",
+    "source": "trailofbits-skills"
+  },
+  "constant-time-analysis": {
+    "description": "Detect compiler-induced timing side-channels in cryptographic code",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "culture-index": {
+    "description": "Interprets Culture Index survey results for individuals and teams",
+    "category": "git-workflow",
+    "source": "trailofbits-skills"
+  },
+  "debug-buttercup": {
+    "description": "Debug Buttercup Kubernetes deployments",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "devcontainer-setup": {
+    "description": "Create pre-configured devcontainers with Claude Code and language-specific tooling",
+    "category": "git-workflow",
+    "source": "trailofbits-skills"
+  },
+  "differential-review": {
+    "description": "Security-focused differential review of code changes with git history analysis and blast radius estimation",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "dwarf-expert": {
+    "description": "Interact with and understand the DWARF debugging format",
+    "category": "output-style",
+    "source": "trailofbits-skills"
+  },
+  "entry-point-analyzer": {
+    "description": "Analyzes smart contract codebases to identify state-changing entry points for security auditing. Detects externally callable functions that modify state, categorizes them by access level, and generates structured audit reports.",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "firebase-apk-scanner": {
+    "description": "Scan Android APKs for Firebase security misconfigurations including open databases, storage buckets, authentication issues, and exposed cloud functions. For authorized security research only.",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "fp-check": {
+    "description": "Systematic false positive verification for security bug analysis with mandatory gate reviews",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "gh-cli": {
+    "description": "Intercepts GitHub URL fetches and curl/wget commands, redirecting to the authenticated gh CLI.",
+    "category": "git-workflow",
+    "source": "trailofbits-skills"
+  },
+  "git-cleanup": {
+    "description": "Safely analyzes and cleans up local git branches and worktrees by categorizing them as merged, squash-merged, superseded, or active work.",
+    "category": "language-support",
+    "source": "trailofbits-skills"
+  },
+  "insecure-defaults": {
+    "description": "Detects insecure default configurations including hardcoded credentials, fallback secrets, weak authentication defaults, and dangerous values in production",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "let-fate-decide": {
+    "description": "Draws Tarot cards using cryptographic randomness to add entropy to vague or underspecified planning. Interprets the spread to guide next steps. Use when feeling lucky, invoking heart-of-the-cards energy, or when prompts are ambiguous.",
+    "category": "git-workflow",
+    "source": "trailofbits-skills"
+  },
+  "modern-python": {
+    "description": "Modern Python best practices. Use when creating new Python projects, and writing Python scripts, or migrating existing projects from legacy tools.",
+    "category": "language-support",
+    "source": "trailofbits-skills"
+  },
+  "property-based-testing": {
+    "description": "Property-based testing guidance for multiple languages and smart contracts",
+    "category": "git-workflow",
+    "source": "trailofbits-skills"
+  },
+  "seatbelt-sandboxer": {
+    "description": "Generate minimal macOS Seatbelt sandbox configurations for applications",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "second-opinion": {
+    "description": "Runs code reviews using external LLM CLIs (OpenAI Codex, Google Gemini) on uncommitted changes, branch diffs, or specific commits. Bundles Codex's built-in MCP server for direct tool access.",
+    "category": "code-review",
+    "source": "trailofbits-skills"
+  },
+  "semgrep-rule-creator": {
+    "description": "Create custom Semgrep rules for detecting bug patterns and security vulnerabilities",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "semgrep-rule-variant-creator": {
+    "description": "Creates language variants of existing Semgrep rules with proper applicability analysis and test-driven validation",
+    "category": "git-workflow",
+    "source": "trailofbits-skills"
+  },
+  "sharp-edges": {
+    "description": "Identify error-prone APIs, dangerous configurations, and footgun designs that enable security mistakes",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "skill-improver": {
+    "description": "Automatically reviews and fixes Claude Code skills through iterative refinement until they meet quality standards. Requires plugin-dev plugin.",
+    "category": "code-review",
+    "source": "trailofbits-skills"
+  },
+  "spec-to-code-compliance": {
+    "description": "Specification-to-code compliance checker for blockchain audits with evidence-based alignment analysis",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "static-analysis": {
+    "description": "Static analysis toolkit with CodeQL, Semgrep, and SARIF parsing for security vulnerability detection",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "supply-chain-risk-auditor": {
+    "description": "Audit supply-chain threat landscape of project dependencies for exploitation or takeover risk",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "testing-handbook-skills": {
+    "description": "Skills from the Trail of Bits Application Security Testing Handbook (appsec.guide)",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "variant-analysis": {
+    "description": "Find similar vulnerabilities and bugs across codebases using pattern-based analysis",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "workflow-skill-design": {
+    "description": "Teaches design patterns for workflow-based Claude Code skills and provides a review agent for auditing existing skills",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "yara-authoring": {
+    "description": "YARA-X detection rule authoring with linting and quality analysis",
+    "category": "code-review",
+    "source": "trailofbits-skills"
+  },
+  "zeroize-audit": {
+    "description": "Detects missing or compiler-optimized zeroization of sensitive data with assembly and control-flow analysis",
+    "category": "security",
+    "source": "trailofbits-skills"
+  },
+  "clangd-lsp": {
+    "description": "clangd lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "csharp-lsp": {
+    "description": "csharp lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "gopls-lsp": {
+    "description": "gopls lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "jdtls-lsp": {
+    "description": "jdtls lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "kotlin-lsp": {
+    "description": "kotlin lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "lua-lsp": {
+    "description": "lua lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "php-lsp": {
+    "description": "php lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "pyright-lsp": {
+    "description": "pyright lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "ruby-lsp": {
+    "description": "ruby lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "rust-analyzer-lsp": {
+    "description": "rust analyzer lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "swift-lsp": {
+    "description": "swift lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "typescript-lsp": {
+    "description": "typescript lsp",
+    "category": "language-support",
+    "source": "claude-plugins-official"
+  },
+  "asana": {
+    "description": "asana",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "context7": {
+    "description": "context7",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "firebase": {
+    "description": "firebase",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "github": {
+    "description": "github",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "gitlab": {
+    "description": "gitlab",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "greptile": {
+    "description": "greptile",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "laravel-boost": {
+    "description": "laravel boost",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "linear": {
+    "description": "linear",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "playwright": {
+    "description": "playwright",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "serena": {
+    "description": "serena",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "slack": {
+    "description": "slack",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "stripe": {
+    "description": "stripe",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  },
+  "supabase": {
+    "description": "supabase",
+    "category": "integration",
+    "source": "claude-plugins-official"
+  }
+}

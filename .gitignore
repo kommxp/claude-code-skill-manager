@@ -1,0 +1,4 @@
+node_modules/
+tmp-*.txt
+*.log
+PRD.md

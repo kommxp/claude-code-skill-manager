@@ -1,0 +1,19 @@
+{
+  "name": "skill-manager",
+  "version": "0.1.0",
+  "description": "Claude Code Skill Manager — Local skill asset visualization and management tool",
+  "main": "server/index.js",
+  "scripts": {
+    "validate": "node server/scripts/validate-history.js",
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "setup": "npm install && cd client && npm install --legacy-peer-deps && npm run build"
+  },
+  "keywords": ["claude-code", "skill-manager", "plugin"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
