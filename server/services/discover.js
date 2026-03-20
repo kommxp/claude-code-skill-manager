@@ -595,13 +595,23 @@ async function searchAndCollect(query, type, token, seen, skills) {
   }
 }
 
+// Keywords indicating a collection/aggregation repo (not a single skill)
+// These repos should be scanned internally by the aggregated repo scanner, not added as a single skill
+// (集合型仓库关键词——这些仓库应该由聚合仓库扫描器内部扫描，而不是作为单个 skill 加入)
+const COLLECTION_KEYWORDS = /^(awesome-|.*-skills$|.*-plugins$|.*-toolkit$|.*-collection$|.*-awesome-|.*-curated$)/i;
+
 /**
  * Add a GitHub repo object to skills list (auto-dedup) (把一个 GitHub repo 对象加入 skills 列表（自动去重）)
+ * Skips collection/aggregation repos (they are handled by fetchAggregatedRepos instead)
  */
 function addRepoToSkills(repo, seen, skills, discoveredVia) {
   const fullName = repo.full_name.toLowerCase();
   if (seen.has(fullName) || EXCLUDE_REPOS.has(fullName)) return;
   seen.add(fullName);
+
+  // Skip collection repos — they contain many skills inside, not a single skill
+  // They will be discovered and scanned by fetchAggregatedRepos / fetchAwesomeLists instead
+  if (COLLECTION_KEYWORDS.test(repo.name)) return;
 
   skills.push({
     name: repo.name,
@@ -996,6 +1006,9 @@ async function fetchAwesomeLists(token) {
         seen.add(key);
 
         const [, repoName] = repoFullName.split('/');
+        // Skip collection repos (跳过集合型仓库)
+        if (COLLECTION_KEYWORDS.test(repoName)) continue;
+
         skills.push({
           name: repoName,
           description: repoName.replace(/-/g, ' '),
