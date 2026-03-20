@@ -36,7 +36,7 @@ cd /d "%DIR%"
 set RETRIES=0
 
 :start_loop
-node server/index.js
+node --max-old-space-size=512 server/index.js
 if %errorlevel% equ 0 goto :done
 
 set /a RETRIES+=1

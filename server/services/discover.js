@@ -1168,7 +1168,7 @@ async function fetchAggregatedRepos(token) {
               source: fullName,
               sourceType: 'community',
               repoUrl: `https://github.com/${fullName}/tree/main/${dirPath}`,
-              repoStars: source.stars || 0,
+              repoStars: 0, // Sub-skills don't have their own stars (子 skill 没有独立 stars)
               pushedAt: source.pushedAt || null,
               category: inferCategory(name, ''),
               tags: [],
