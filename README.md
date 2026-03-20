@@ -5,8 +5,8 @@ A local dashboard for managing, discovering, and analyzing [Claude Code](https:/
 ## Features
 
 - **Dashboard** — Usage statistics, call trends, heatmap, and insights for your installed skills
-- **My Skills** — Browse all 67+ built-in commands and your custom skills with search, filter, and detail view
-- **Discover** — Auto-discover 1800+ skills from GitHub with multi-dimensional filtering (category, action, complexity), AI-generated descriptions, and one-click install
+- **My Skills** — Browse all built-in commands and your custom skills with search, filter, and detail view
+- **Discover** — Auto-discover skills from GitHub with multi-dimensional filtering (category, action, complexity), AI-generated descriptions, and one-click install
 - **Settings** — Configure GitHub token for higher API limits
 - **Bilingual** — Full Chinese/English UI switching
 
@@ -21,7 +21,7 @@ A local dashboard for managing, discovering, and analyzing [Claude Code](https:/
 
 ```bash
 # Clone
-git clone https://github.com/YOUR_USERNAME/claude-code-skill-manager.git
+git clone https://github.com/your-username/claude-code-skill-manager.git
 cd claude-code-skill-manager
 
 # Install dependencies & start

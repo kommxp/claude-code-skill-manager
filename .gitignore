@@ -2,3 +2,12 @@ node_modules/
 tmp-*.txt
 *.log
 PRD.md
+.env
+.env.*
+.DS_Store
+.idea/
+.vscode/
+*.local
+*.bak
+*.swp
+*.swo

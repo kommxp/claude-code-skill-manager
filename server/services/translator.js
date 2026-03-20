@@ -173,9 +173,17 @@ function callClaude(prompt) {
     delete env.ANTHROPIC_BASE_URL;
     delete env.ANTHROPIC_API_KEY;
 
-    // Windows 需要 Git Bash 路径
+    // Auto-detect Git Bash path on Windows
     if (process.platform === 'win32') {
-      env.CLAUDE_CODE_GIT_BASH_PATH = process.env.CLAUDE_CODE_GIT_BASH_PATH || 'D:\\Git\\bin\\bash.exe';
+      const gitBashCandidates = [
+        process.env.CLAUDE_CODE_GIT_BASH_PATH,
+        'C:\\Program Files\\Git\\bin\\bash.exe',
+        'D:\\Git\\bin\\bash.exe',
+        'C:\\Git\\bin\\bash.exe',
+      ];
+      const fs = require('fs');
+      const gitBash = gitBashCandidates.find(p => p && fs.existsSync(p));
+      if (gitBash) env.CLAUDE_CODE_GIT_BASH_PATH = gitBash;
     }
 
     const child = spawn('claude', ['-p', '--max-turns', '1', '--no-session-persistence', '--model', 'sonnet'], {

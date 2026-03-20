@@ -8,8 +8,7 @@ const TRUST_COLORS = {
   unverified: 'bg-red-900/50 text-red-300 border-red-700',
 }
 
-// 标签枚举从 API 动态加载，这里只是 fallback
-const CAT_LABELS = {}
+// Tag enums loaded from API dynamically
 
 // 独立的标签显示函数（DetailPanel 和主组件都能用）
 const TRUST_LABELS = {
@@ -76,8 +75,8 @@ function DetailPanel({ skill, onClose, lang, enums }) {
     try {
       const d = await api.discoverDetail(skill.name)
       setDetail(d)
-    } catch (e) {
-      console.error(e)
+    } catch {
+      // detail fetch failed, will show fallback
     } finally {
       setLoading(false)
     }
