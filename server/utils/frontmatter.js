@@ -1,5 +1,5 @@
 /**
- * 解析 YAML frontmatter（容错：解析失败记日志不崩溃）
+ * Parse YAML frontmatter (fault-tolerant: log on failure, don't crash) (解析 YAML frontmatter（容错：解析失败记日志不崩溃）)
  */
 function parseFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -15,7 +15,7 @@ function parseFrontmatter(content) {
       if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1);
       }
-      // 处理布尔值
+      // Handle boolean values (处理布尔值)
       if (value === 'true') value = true;
       else if (value === 'false') value = false;
       fm[key] = value;

@@ -4,20 +4,20 @@ const { SKILLS_DIR, PLUGINS_DIR, CONFIG_FILE, toPosix } = require('../utils/path
 const { parseFrontmatter } = require('../utils/frontmatter');
 
 /**
- * 扫描所有本地 skill/command/plugin，返回统一数组
+ * Scan all local skills/commands/plugins, return unified array (扫描所有本地 skill/command/plugin，返回统一数组)
  *
- * type 说明：
- *   - 'command'  → commands/*.md，出现在 / 菜单中，用户可直接调用
- *   - 'skill'    → skills/SKILL.md，隐式技能，Claude 根据对话意图自动触发
- *   - 'custom'   → ~/.claude/skills/ 下用户自建，默认可 / 调用
- *   - 'external' → external_plugins/，MCP 集成等
+ * type descriptions (type 说明):
+ *   - 'command'  -> commands/*.md, appears in / menu, user can invoke directly (出现在 / 菜单中，用户可直接调用)
+ *   - 'skill'    -> skills/SKILL.md, implicit skill, Claude auto-triggers based on conversation intent (隐式技能，Claude 根据对话意图自动触发)
+ *   - 'custom'   -> ~/.claude/skills/ user-created, invocable via / by default (用户自建，默认可 / 调用)
+ *   - 'external' -> external_plugins/, MCP integrations etc. (MCP 集成等)
  */
 function scanAllSkills() {
   const skills = [];
   const errors = [];
   const disabledSkills = loadDisabledList();
 
-  // 0. Claude Code 内置命令（从 cli.js 源码动态提取）
+  // 0. Claude Code built-in commands (dynamically extracted from cli.js source) (Claude Code 内置命令（从 cli.js 源码动态提取）)
   const bundledSkills = extractBuiltinCommands();
   for (const b of bundledSkills) {
     skills.push({
@@ -40,7 +40,7 @@ function scanAllSkills() {
     });
   }
 
-  // 1. 用户自建 skill
+  // 1. User-created skills (用户自建 skill)
   if (fs.existsSync(SKILLS_DIR)) {
     const dirs = safeReaddir(SKILLS_DIR);
     for (const dir of dirs) {
@@ -53,7 +53,7 @@ function scanAllSkills() {
     }
   }
 
-  // 2. Marketplace 插件
+  // 2. Marketplace plugins (Marketplace 插件)
   if (fs.existsSync(PLUGINS_DIR)) {
     const marketplaces = safeReaddir(PLUGINS_DIR);
     for (const mp of marketplaces) {
@@ -67,7 +67,7 @@ function scanAllSkills() {
   }
 
   if (errors.length > 0) {
-    console.log(`[skill-scanner] ${errors.length} 个扫描错误（已跳过）:`);
+    console.log(`[skill-scanner] ${errors.length} scan errors (skipped):`);
     for (const err of errors) {
       console.log(`  - ${err.source}/${err.name}: ${err.error}`);
     }
@@ -77,7 +77,7 @@ function scanAllSkills() {
 }
 
 /**
- * 扫描单个用户自建 skill
+ * Scan a single user-created skill (扫描单个用户自建 skill)
  */
 function scanCustomSkill(dirName, disabledSkills) {
   const dirPath = path.join(SKILLS_DIR, dirName);
@@ -100,7 +100,7 @@ function scanCustomSkill(dirName, disabledSkills) {
     version: fm.version || null,
     author: null,
     source: 'custom',
-    type: 'command', // 自建 skill 默认可 / 调用
+    type: 'command', // Custom skills are invocable via / by default (自建 skill 默认可 / 调用)
     category: null,
     keywords: fm.keywords ? fm.keywords.split(',').map(k => k.trim()) : [],
     userInvocable: fm['user-invocable'] !== false,
@@ -114,7 +114,7 @@ function scanCustomSkill(dirName, disabledSkills) {
 }
 
 /**
- * 扫描 marketplace 下的所有插件
+ * Scan all plugins under a marketplace (扫描 marketplace 下的所有插件)
  */
 function scanMarketplace(mpName, disabledSkills) {
   const mpPath = path.join(PLUGINS_DIR, mpName);
@@ -126,7 +126,7 @@ function scanMarketplace(mpName, disabledSkills) {
 
   const results = [];
 
-  // 扫描 plugins/ 子目录
+  // Scan plugins/ subdirectory (扫描 plugins/ 子目录)
   const pluginsPath = path.join(mpPath, 'plugins');
   if (fs.existsSync(pluginsPath)) {
     const plugins = safeReaddir(pluginsPath);
@@ -135,14 +135,14 @@ function scanMarketplace(mpName, disabledSkills) {
         const pluginDir = path.join(pluginsPath, pluginName);
         if (!fs.statSync(pluginDir).isDirectory()) continue;
 
-        // 读取 .claude-plugin/plugin.json — 没有此文件说明 plugin 未安装，跳过
+        // Read .claude-plugin/plugin.json — if not present, plugin is not installed, skip (读取 .claude-plugin/plugin.json — 没有此文件说明 plugin 未安装，跳过)
         const cpPluginJson = path.join(pluginDir, '.claude-plugin', 'plugin.json');
         if (!fs.existsSync(cpPluginJson)) continue;
 
         let pluginMeta = {};
         try { pluginMeta = JSON.parse(fs.readFileSync(cpPluginJson, 'utf-8')); } catch {}
 
-        // ===== 扫描 commands/ 目录（/ 可调用的命令）=====
+        // ===== Scan commands/ directory (/ invocable commands) (扫描 commands/ 目录（/ 可调用的命令）) =====
         const commandsDir = path.join(pluginDir, 'commands');
         if (fs.existsSync(commandsDir)) {
           const cmdFiles = safeReaddirFiles(commandsDir, '.md');
@@ -177,7 +177,7 @@ function scanMarketplace(mpName, disabledSkills) {
           }
         }
 
-        // ===== 扫描 skills/ 目录（隐式技能，Claude 自动触发）=====
+        // ===== Scan skills/ directory (implicit skills, Claude auto-triggers) (扫描 skills/ 目录（隐式技能，Claude 自动触发）) =====
         const skillsSubDir = path.join(pluginDir, 'skills');
         if (fs.existsSync(skillsSubDir)) {
           const skillDirs = safeReaddir(skillsSubDir);
@@ -204,7 +204,7 @@ function scanMarketplace(mpName, disabledSkills) {
                 type: 'skill',
                 category: pluginMeta.category || null,
                 keywords: pluginMeta.keywords || [],
-                userInvocable: false, // 隐式技能不可 / 调用
+                userInvocable: false, // Implicit skills cannot be / invoked (隐式技能不可 / 调用)
                 disableModelInvocation: fm['disable-model-invocation'] === true,
                 allowedTools: fm['allowed-tools'] ? fm['allowed-tools'].split(',').map(t => t.trim()) : [],
                 enabled: !disabledSkills.includes(id),
@@ -217,7 +217,7 @@ function scanMarketplace(mpName, disabledSkills) {
           }
         }
 
-        // 如果 plugin 既没有 commands 也没有 skills 目录，检查根 SKILL.md
+        // If plugin has neither commands nor skills directory, check root SKILL.md (如果 plugin 既没有 commands 也没有 skills 目录，检查根 SKILL.md)
         const hasCommands = fs.existsSync(commandsDir) && safeReaddirFiles(commandsDir, '.md').length > 0;
         const hasSkills = fs.existsSync(skillsSubDir) && safeReaddir(skillsSubDir).length > 0;
         if (!hasCommands && !hasSkills) {
@@ -255,7 +255,7 @@ function scanMarketplace(mpName, disabledSkills) {
     }
   }
 
-  // 扫描 external_plugins/
+  // Scan external_plugins/ (扫描 external_plugins/)
   const extPath = path.join(mpPath, 'external_plugins');
   if (fs.existsSync(extPath)) {
     const exts = safeReaddir(extPath);
@@ -264,14 +264,14 @@ function scanMarketplace(mpName, disabledSkills) {
         const extDir = path.join(extPath, extName);
         if (!fs.statSync(extDir).isDirectory()) continue;
 
-        // 读取 .claude-plugin/plugin.json
+        // Read .claude-plugin/plugin.json (读取 .claude-plugin/plugin.json)
         let pluginMeta = {};
         const cpPluginJson = path.join(extDir, '.claude-plugin', 'plugin.json');
         if (fs.existsSync(cpPluginJson)) {
           try { pluginMeta = JSON.parse(fs.readFileSync(cpPluginJson, 'utf-8')); } catch {}
         }
 
-        // 扫描 commands
+        // Scan commands (扫描 commands)
         const commandsDir = path.join(extDir, 'commands');
         if (fs.existsSync(commandsDir)) {
           const cmdFiles = safeReaddirFiles(commandsDir, '.md');
@@ -306,7 +306,7 @@ function scanMarketplace(mpName, disabledSkills) {
           }
         }
 
-        // 扫描 skills
+        // Scan skills (扫描 skills)
         const skillsDir = path.join(extDir, 'skills');
         if (fs.existsSync(skillsDir)) {
           const skillDirs = safeReaddir(skillsDir);
@@ -339,7 +339,7 @@ function scanMarketplace(mpName, disabledSkills) {
           }
         }
 
-        // 如果没有 commands 也没有 skills，作为 external 整体条目
+        // If no commands or skills, add as external entry (如果没有 commands 也没有 skills，作为 external 整体条目)
         const hasCmd = fs.existsSync(commandsDir) && safeReaddirFiles(commandsDir, '.md').length > 0;
         const hasSkl = fs.existsSync(skillsDir) && safeReaddir(skillsDir).length > 0;
         if (!hasCmd && !hasSkl) {
@@ -351,7 +351,7 @@ function scanMarketplace(mpName, disabledSkills) {
             version: pluginMeta.version || null,
             author: pluginMeta.author || null,
             source: 'external',
-            type: 'command', // MCP 集成默认可调用
+            type: 'command', // MCP integrations are invocable by default (MCP 集成默认可调用)
             category: pluginMeta.category || null,
             keywords: pluginMeta.keywords || [],
             userInvocable: true,
@@ -372,7 +372,7 @@ function scanMarketplace(mpName, disabledSkills) {
 }
 
 // ============================================================
-// 辅助函数
+// Helper functions (辅助函数)
 // ============================================================
 
 function findSkillMd(dirPath) {
@@ -422,14 +422,14 @@ function saveDisabledList(disabledSkills) {
 }
 
 /**
- * 从 Claude Code cli.js 源码中动态提取内置命令
- * 匹配模式：name:"xxx",description:"xxx"
- * 过滤掉非 slash command 的条目（npm 包、pyright 参数等）
+ * Dynamically extract built-in commands from Claude Code cli.js source (从 Claude Code cli.js 源码中动态提取内置命令)
+ * Match pattern: name:"xxx",description:"xxx" (匹配模式)
+ * Filter out non-slash-command entries (npm packages, pyright params, etc.) (过滤掉非 slash command 的条目（npm 包、pyright 参数等）)
  */
 function extractBuiltinCommands() {
   const { execSync } = require('child_process');
 
-  // 找到 claude 的 cli.js 路径
+  // Find claude's cli.js path (找到 claude 的 cli.js 路径)
   let cliPath = null;
   try {
     const npmRoot = execSync('npm root -g', { encoding: 'utf-8' }).trim();
@@ -437,11 +437,11 @@ function extractBuiltinCommands() {
     if (fs.existsSync(candidate)) cliPath = candidate;
   } catch {}
 
-  // 备选：通过 which claude 推断
+  // Alternative: infer from which claude (备选：通过 which claude 推断)
   if (!cliPath) {
     try {
       const claudePath = execSync('which claude', { encoding: 'utf-8' }).trim();
-      // claude 通常是 npm/claude -> ../node_modules/@anthropic-ai/claude-code/cli.js
+      // claude is usually npm/claude -> ../node_modules/@anthropic-ai/claude-code/cli.js
       const dir = path.dirname(path.dirname(claudePath));
       const candidate = path.join(dir, 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js');
       if (fs.existsSync(candidate)) cliPath = candidate;
@@ -449,14 +449,14 @@ function extractBuiltinCommands() {
   }
 
   if (!cliPath) {
-    console.log('[skill-scanner] 未找到 Claude Code cli.js，跳过内置命令提取');
+    console.log('[skill-scanner] Claude Code cli.js not found, skipping built-in command extraction');
     return [];
   }
 
   try {
     const source = fs.readFileSync(cliPath, 'utf-8');
 
-    // 第1步：匹配所有内置命令类型（local-jsx, local, prompt）
+    // Step 1: Match all built-in command types (local-jsx, local, prompt) (第1步：匹配所有内置命令类型)
     const typeRegex = /type:"(?:local-jsx|local|prompt)",name:"([a-z][a-z0-9-]*)"/g;
     const builtinNames = new Set();
     let m;
@@ -464,7 +464,7 @@ function extractBuiltinCommands() {
       builtinNames.add(m[1]);
     }
 
-    // 第2步：获取描述（name+description 模式）
+    // Step 2: Get descriptions (name+description pattern) (第2步：获取描述（name+description 模式）)
     const descMap = {};
     const descRegex = /name:"([^"]+)",description:"([^"]+)"/g;
     while ((m = descRegex.exec(source)) !== null) {
@@ -473,16 +473,16 @@ function extractBuiltinCommands() {
       }
     }
 
-    // 合并
+    // Merge (合并)
     const commands = [...builtinNames].map(name => ({
       name,
       description: descMap[name] || name.replace(/-/g, ' '),
     }));
 
-    console.log(`[skill-scanner] 从 cli.js 提取到 ${commands.length} 个内置命令`);
+    console.log(`[skill-scanner] Extracted ${commands.length} built-in commands from cli.js`);
     return commands;
   } catch (e) {
-    console.log(`[skill-scanner] 提取内置命令失败: ${e.message}`);
+    console.log(`[skill-scanner] Built-in command extraction failed: ${e.message}`);
     return [];
   }
 }

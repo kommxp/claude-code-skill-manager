@@ -1,11 +1,11 @@
 /**
- * 聚合统计数据：将 skill 调用记录 + skill 元数据合并
+ * Aggregate stats: merge skill invocation records + skill metadata (聚合统计数据：将 skill 调用记录 + skill 元数据合并)
  */
 
 /**
- * 从调用记录生成统计
- * @param {Array} calls - history-parser 输出的调用记录
- * @returns {Record<string, SkillStats>} skillName → stats
+ * Generate stats from invocation records (从调用记录生成统计)
+ * @param {Array} calls - Invocation records output by history-parser (history-parser 输出的调用记录)
+ * @returns {Record<string, SkillStats>} skillName -> stats
  */
 function aggregateStats(calls) {
   const statsMap = {};
@@ -30,16 +30,16 @@ function aggregateStats(calls) {
     if (!s.lastUsed || ts > s.lastUsed) s.lastUsed = ts;
     if (!s.firstUsed || ts < s.firstUsed) s.firstUsed = ts;
 
-    // 按日期聚合
+    // Aggregate by date (按日期聚合)
     const date = new Date(ts).toISOString().slice(0, 10);
     s.callsByDate[date] = (s.callsByDate[date] || 0) + 1;
 
-    // 按项目聚合
+    // Aggregate by project (按项目聚合)
     if (call.project) {
       s.callsByProject[call.project] = (s.callsByProject[call.project] || 0) + 1;
     }
 
-    // 按小时聚合
+    // Aggregate by hour (按小时聚合)
     const hour = new Date(ts).getHours();
     s.callsByHour[hour]++;
   }
@@ -48,7 +48,7 @@ function aggregateStats(calls) {
 }
 
 /**
- * 将统计数据合并到 skill 列表中
+ * Merge stats into skill list (将统计数据合并到 skill 列表中)
  */
 function mergeStatsToSkills(skills, statsMap) {
   for (const skill of skills) {
@@ -66,14 +66,14 @@ function mergeStatsToSkills(skills, statsMap) {
 }
 
 /**
- * 生成总览数据
+ * Generate overview data (生成总览数据)
  */
 function generateOverview(allSkills, calls) {
-  // 只统计本地可用的技能（bundled + custom），排除 marketplace 未安装的
+  // Only count locally available skills (bundled + custom), exclude uninstalled marketplace ones (只统计本地可用的技能（bundled + custom），排除 marketplace 未安装的)
   const skills = allSkills.filter(s => s.source === 'bundled' || s.source === 'custom');
   const skillNames = new Set(skills.map(s => s.name.toLowerCase()));
 
-  // 只统计属于本地技能的调用
+  // Only count invocations belonging to local skills (只统计属于本地技能的调用)
   const relevantCalls = calls.filter(c => skillNames.has(c.skillName));
 
   const now = Date.now();
@@ -88,10 +88,10 @@ function generateOverview(allSkills, calls) {
     .filter(s => s.stats && s.stats.totalCalls > 0)
     .sort((a, b) => b.stats.totalCalls - a.stats.totalCalls);
 
-  // 从未使用的 skill（排除内置命令，只统计自建的）
+  // Never-used skills (exclude built-in, only count custom) (从未使用的 skill（排除内置命令，只统计自建的）)
   const neverUsed = skills.filter(s => s.source !== 'bundled' && (!s.stats || s.stats.totalCalls === 0));
 
-  // 主力技能（占总调用的百分比）
+  // Power skill (percentage of total calls) (主力技能（占总调用的百分比）)
   const totalCalls = relevantCalls.length;
   let mainSkill = null;
   if (sorted.length > 0 && totalCalls > 0) {
@@ -103,7 +103,7 @@ function generateOverview(allSkills, calls) {
     };
   }
 
-  // 本周新尝试的 skill
+  // New skills tried this week (本周新尝试的 skill)
   const allTimeSkills = new Set(relevantCalls.filter(c => c.timestamp <= sevenDaysAgo).map(c => c.skillName));
   const newThisWeek = [...recentSkills].filter(s => !allTimeSkills.has(s));
 
@@ -127,7 +127,7 @@ function generateOverview(allSkills, calls) {
 }
 
 /**
- * 生成洞察卡片数据
+ * Generate insight cards data (生成洞察卡片数据)
  */
 function generateInsights(skills, calls, mainSkill, neverUsed, newThisWeek) {
   const insights = [];

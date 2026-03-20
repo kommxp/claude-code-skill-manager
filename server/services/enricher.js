@@ -1,10 +1,10 @@
 /**
- * enricher.js — Skill 描述富化引擎
+ * enricher.js — Skill description enrichment engine (Skill 描述富化引擎)
  *
- * 三层渐进式补充：
- *   第一层：Trees API 批量读 marketplace SKILL.md（刷新时自动）
- *   第二层：按需拉 README + Claude 翻译（用户点击时）
- *   第三层：后台按 score 从高到低慢补（空闲时）
+ * Three-layer progressive enrichment (三层渐进式补充):
+ *   Layer 1: Trees API batch read marketplace SKILL.md (during refresh) (Trees API 批量读 marketplace SKILL.md（刷新时自动）)
+ *   Layer 2: On-demand fetch README + Claude translation (when user clicks) (按需拉 README + Claude 翻译（用户点击时）)
+ *   Layer 3: Background slow-fill by score (when idle) (后台按 score 从高到低慢补（空闲时）)
  */
 
 const fs = require('fs');
@@ -12,26 +12,26 @@ const https = require('https');
 const { spawn } = require('child_process');
 const { DESC_CACHE } = require('../utils/paths');
 
-// 描述缓存：{ [repoUrl]: { en, zh, useCase, enrichedAt } }
+// Description cache: { [repoUrl]: { en, zh, useCase, enrichedAt } } (描述缓存)
 let descCache = {};
 let bgTimer = null;
-let pendingSkills = [];  // 等待后台富化的 skill 列表
+let pendingSkills = [];  // Skills waiting for background enrichment (等待后台富化的 skill 列表)
 
 // ============================================================
-// 对外接口
+// Public API (对外接口)
 // ============================================================
 
 /**
- * 启动富化引擎
+ * Start enrichment engine (启动富化引擎)
  */
 function startEnricher(getSkillsFn) {
   loadDescCache();
-  console.log(`[enricher] 描述缓存加载: ${Object.keys(descCache).length} 条`);
+  console.log(`[enricher] Description cache loaded: ${Object.keys(descCache).length} entries`);
 
-  // 后台慢补定时器：每 10 分钟补 10 个
+  // Background slow-fill timer: enrich 10 every 10 min (后台慢补定时器：每 10 分钟补 10 个)
   bgTimer = setInterval(() => {
     backgroundEnrich(getSkillsFn).catch(e => {
-      console.log(`[enricher] 后台富化失败: ${e.message}`);
+      console.log(`[enricher] Background enrichment failed: ${e.message}`);
     });
   }, 10 * 60 * 1000);
 
@@ -39,15 +39,15 @@ function startEnricher(getSkillsFn) {
 }
 
 /**
- * 第一层：用 Trees API 批量读 marketplace 的 SKILL.md 描述
- * 在 discover 刷新时调用
+ * Layer 1: Batch read marketplace SKILL.md descriptions via Trees API (第一层：用 Trees API 批量读 marketplace 的 SKILL.md 描述)
+ * Called during discover refresh (在 discover 刷新时调用)
  */
 async function enrichMarketplaceDescriptions(skills, token) {
-  // 按仓库分组
+  // Group by repo (按仓库分组)
   const byRepo = {};
   for (const s of skills) {
     if (s.sourceType !== 'marketplace') continue;
-    if (descCache[s.repoUrl]) continue; // 已有缓存
+    if (descCache[s.repoUrl]) continue; // Already cached (已有缓存)
     const match = s.repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
     if (!match) continue;
     const repoKey = `${match[1]}/${match[2]}`;
@@ -57,14 +57,14 @@ async function enrichMarketplaceDescriptions(skills, token) {
 
   for (const [repoFullName, repoSkills] of Object.entries(byRepo)) {
     try {
-      // Trees API：1 次请求拿整个仓库文件树
+      // Trees API: 1 request to get entire repo file tree (Trees API：1 次请求拿整个仓库文件树)
       const treeData = await githubGet(
         `https://api.github.com/repos/${repoFullName}/git/trees/main?recursive=1`,
         token
       );
       if (!treeData || !treeData.tree) continue;
 
-      // 找到每个 skill 的 SKILL.md 或 README.md
+      // Find each skill's SKILL.md or README.md (找到每个 skill 的 SKILL.md 或 README.md)
       for (const skill of repoSkills) {
         const skillPath = skill.repoUrl.replace(/.*\/tree\/main\//, '');
         const skillMd = treeData.tree.find(f =>
@@ -79,7 +79,7 @@ async function enrichMarketplaceDescriptions(skills, token) {
         const targetFile = skillMd || readmeMd;
         if (!targetFile) continue;
 
-        // 读取文件内容（通过 blob API）
+        // Read file content (via blob API) (读取文件内容（通过 blob API）)
         try {
           const blob = await githubGet(
             `https://api.github.com/repos/${repoFullName}/git/blobs/${targetFile.sha}`,
@@ -101,9 +101,9 @@ async function enrichMarketplaceDescriptions(skills, token) {
         } catch {}
       }
 
-      console.log(`[enricher] Trees API "${repoFullName}": 已处理 ${repoSkills.length} 个`);
+      console.log(`[enricher] Trees API "${repoFullName}": processed ${repoSkills.length}`);
     } catch (e) {
-      console.log(`[enricher] Trees API "${repoFullName}" 失败: ${e.message}`);
+      console.log(`[enricher] Trees API "${repoFullName}" failed: ${e.message}`);
     }
   }
 
@@ -111,19 +111,19 @@ async function enrichMarketplaceDescriptions(skills, token) {
 }
 
 /**
- * 第二层：按需获取单个 skill 的详细信息 + 翻译
+ * Layer 2: On-demand fetch single skill detail + translation (第二层：按需获取单个 skill 的详细信息 + 翻译)
  */
 async function getSkillDetail(skill, token) {
   const key = skill.repoUrl;
   if (!key) return null;
 
-  // 有完整缓存直接返回
+  // Return immediately if complete cache exists (有完整缓存直接返回)
   const cached = descCache[key];
   if (cached && cached.zh && cached.useCaseZh) {
     return cached;
   }
 
-  // 拉英文描述（如果没有的话）
+  // Fetch English description if missing (拉英文描述（如果没有的话）)
   let enDesc = cached?.en || skill.description || '';
 
   if (!enDesc || enDesc === skill.name.replace(/-/g, ' ')) {
@@ -137,7 +137,7 @@ async function getSkillDetail(skill, token) {
 
   if (!enDesc) enDesc = skill.description || skill.name;
 
-  // 用 Claude 翻译 + 生成使用场景
+  // Use Claude for translation + use case generation (用 Claude 翻译 + 生成使用场景)
   let zh = cached?.zh || null;
   let useCaseZh = cached?.useCaseZh || null;
   let useCaseEn = cached?.useCaseEn || null;
@@ -149,14 +149,14 @@ async function getSkillDetail(skill, token) {
       useCaseZh = result.useCaseZh;
       useCaseEn = result.useCaseEn;
     } catch (e) {
-      console.log(`[enricher] Claude 翻译失败: ${e.message}`);
+      console.log(`[enricher] Claude translation failed: ${e.message}`);
       zh = enDesc;
       useCaseZh = '';
       useCaseEn = '';
     }
   }
 
-  // 缓存
+  // Cache (缓存)
   descCache[key] = {
     en: enDesc,
     zh,
@@ -171,7 +171,7 @@ async function getSkillDetail(skill, token) {
 }
 
 /**
- * 给 skill 列表附加已有的描述缓存（不拉新数据，纯内存操作）
+ * Attach existing description cache to skill list (no new data fetching, pure memory operation) (给 skill 列表附加已有的描述缓存（不拉新数据，纯内存操作）)
  */
 function applyDescriptions(skills) {
   for (const s of skills) {
@@ -180,7 +180,7 @@ function applyDescriptions(skills) {
       if (cached.zh) s.descriptionZh = cached.zh;
       if (cached.useCaseZh) s.useCaseZh = cached.useCaseZh;
       if (cached.useCaseEn) s.useCaseEn = cached.useCaseEn;
-      // 兼容旧缓存
+      // Backward compatibility with old cache (兼容旧缓存)
       if (cached.useCase && !cached.useCaseZh) s.useCaseZh = cached.useCase;
       if (cached.en && s.description === s.name.replace(/-/g, ' ')) {
         s.description = cached.en;
@@ -191,14 +191,14 @@ function applyDescriptions(skills) {
 }
 
 // ============================================================
-// 第三层：后台慢补
+// Layer 3: Background slow-fill (第三层：后台慢补)
 // ============================================================
 
 async function backgroundEnrich(getSkillsFn) {
   const skills = await getSkillsFn();
   if (!skills || skills.length === 0) return;
 
-  // 找缺中文描述的高分 skill，优先补充
+  // Find high-score skills missing Chinese descriptions, prioritize enrichment (找缺中文描述的高分 skill，优先补充)
   const needEnrich = skills
     .filter(s => {
       if (!s.repoUrl) return false;
@@ -210,7 +210,7 @@ async function backgroundEnrich(getSkillsFn) {
 
   if (needEnrich.length === 0) return;
 
-  console.log(`[enricher] 后台慢补: ${needEnrich.length} 个 skill`);
+  console.log(`[enricher] Background slow-fill: ${needEnrich.length} skills`);
   let enriched = 0;
 
   for (const skill of needEnrich) {
@@ -218,7 +218,7 @@ async function backgroundEnrich(getSkillsFn) {
       const key = skill.repoUrl;
       let enDesc = descCache[key]?.en || skill.description || '';
 
-      // 如果英文描述还是文件夹名，尝试读 README
+      // If English description is still the folder name, try reading README (如果英文描述还是文件夹名，尝试读 README)
       if (!enDesc || enDesc === skill.name.replace(/-/g, ' ')) {
         try {
           const readme = await fetchReadme(skill, null);
@@ -228,7 +228,7 @@ async function backgroundEnrich(getSkillsFn) {
 
       if (!enDesc) enDesc = skill.description || skill.name;
 
-      // Claude 翻译
+      // Claude translation (Claude 翻译)
       const result = await callClaudeForEnrich(skill.name, enDesc);
 
       descCache[key] = {
@@ -241,22 +241,22 @@ async function backgroundEnrich(getSkillsFn) {
       };
       enriched++;
     } catch (e) {
-      console.log(`[enricher] 后台富化 "${skill.name}" 失败: ${e.message}`);
+      console.log(`[enricher] Background enrichment "${skill.name}" failed: ${e.message}`);
     }
   }
 
   if (enriched > 0) {
     saveDescCache();
-    console.log(`[enricher] 后台慢补完成: ${enriched} 个`);
+    console.log(`[enricher] Background slow-fill complete: ${enriched}`);
   }
 }
 
 // ============================================================
-// 工具函数
+// Utility functions (工具函数)
 // ============================================================
 
 /**
- * 从 markdown 内容提取描述（取前几行有意义的文本）
+ * Extract description from markdown content (first few meaningful lines of text) (从 markdown 内容提取描述（取前几行有意义的文本）)
  */
 function extractDescription(content) {
   const lines = content.split('\n');
@@ -264,7 +264,7 @@ function extractDescription(content) {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    // 跳过空行、标题、frontmatter、代码块
+    // Skip empty lines, headings, frontmatter, code blocks (跳过空行、标题、frontmatter、代码块)
     if (!trimmed) continue;
     if (trimmed.startsWith('#')) continue;
     if (trimmed.startsWith('---')) continue;
@@ -273,7 +273,7 @@ function extractDescription(content) {
     if (trimmed.startsWith('<!--')) continue;
 
     descLines.push(trimmed);
-    // 取前 3 行有效文本
+    // Take first 3 effective lines (取前 3 行有效文本)
     if (descLines.length >= 3) break;
   }
 
@@ -281,10 +281,10 @@ function extractDescription(content) {
 }
 
 /**
- * 读取 skill 的 README
+ * Fetch skill's README (读取 skill 的 README)
  */
 async function fetchReadme(skill, token) {
-  // 尝试从 repoUrl 推断 README 位置
+  // Try to infer README location from repoUrl (尝试从 repoUrl 推断 README 位置)
   const match = skill.repoUrl.match(/github\.com\/([^/]+\/[^/]+)/);
   if (!match) return null;
   const repoFullName = match[1];
@@ -300,7 +300,7 @@ async function fetchReadme(skill, token) {
 }
 
 /**
- * 调用 Claude CLI 翻译 + 生成使用场景
+ * Call Claude CLI for translation + use case generation (调用 Claude CLI 翻译 + 生成使用场景)
  */
 function callClaudeForEnrich(skillName, enDesc) {
   return new Promise((resolve, reject) => {
@@ -313,7 +313,7 @@ Output ONLY valid JSON (no markdown, no code fences):
 {"zh":"一句中文描述（20-50字）","useCaseZh":"使用场景（中文，30-80字，说明什么时候用、适合谁）","useCaseEn":"Use case (English, 30-80 words, when to use, who benefits)"}`;
 
     const env = Object.assign({}, process.env);
-    // 自动检测 Git Bash 路径
+    // Auto-detect Git Bash path (自动检测 Git Bash 路径)
     const gitBashCandidates = [
       process.env.CLAUDE_CODE_GIT_BASH_PATH,
       'C:\\Program Files\\Git\\bin\\bash.exe',
@@ -337,11 +337,11 @@ Output ONLY valid JSON (no markdown, no code fences):
     child.on('close', () => {
       const text = stdout.trim();
       if (!text) {
-        reject(new Error('Claude 无输出'));
+        reject(new Error('Claude returned no output'));
         return;
       }
       try {
-        // 去除可能的 markdown 围栏
+        // Remove possible markdown fences (去除可能的 markdown 围栏)
         const clean = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         const parsed = JSON.parse(clean);
         resolve({
@@ -350,7 +350,7 @@ Output ONLY valid JSON (no markdown, no code fences):
           useCaseEn: parsed.useCaseEn || '',
         });
       } catch {
-        // 如果 JSON 解析失败，直接用原文
+        // If JSON parsing fails, use raw text (如果 JSON 解析失败，直接用原文)
         resolve({ zh: text.slice(0, 200), useCaseZh: '', useCaseEn: '' });
       }
     });
@@ -361,7 +361,7 @@ Output ONLY valid JSON (no markdown, no code fences):
 }
 
 // ============================================================
-// GitHub API（复用 discover 的逻辑）
+// GitHub API (reuse discover's logic) (GitHub API（复用 discover 的逻辑）)
 // ============================================================
 
 function githubGet(url, token) {
@@ -387,12 +387,12 @@ function githubGet(url, token) {
       });
     });
     req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error('超时')); });
+    req.on('timeout', () => { req.destroy(); reject(new Error('Request timeout')); });
   });
 }
 
 // ============================================================
-// 缓存持久化
+// Cache persistence (缓存持久化)
 // ============================================================
 
 function loadDescCache() {
@@ -408,7 +408,7 @@ function saveDescCache() {
   try {
     fs.writeFileSync(DESC_CACHE, JSON.stringify(descCache), 'utf-8');
   } catch (e) {
-    console.error(`[enricher] 缓存写入失败: ${e.message}`);
+    console.error(`[enricher] Cache write failed: ${e.message}`);
   }
 }
 

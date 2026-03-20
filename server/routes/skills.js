@@ -6,30 +6,30 @@ const { loadDisabledList, saveDisabledList } = require('../services/skill-scanne
 const { batchTranslate, batchUseCases, getCacheStats } = require('../services/translator');
 const router = express.Router();
 
-// GET /api/skills — 全部 skill 列表
+// GET /api/skills — Full skill list (全部 skill 列表)
 router.get('/', async (req, res) => {
   const { source, search, sort, lang, type } = req.query;
   let skills = [...req.cache.skills];
 
-  // type 过滤：
-  //   默认 — 本地可用的技能（自建 + 内置 bundled）
-  //   all  — 全部（含 marketplace 未安装的 + 隐式 skill）
-  //   marketplace — marketplace 中的 command + skill（未必已安装）
+  // Type filter (type 过滤):
+  //   default — locally available skills (custom + built-in bundled) (本地可用的技能（自建 + 内置 bundled）)
+  //   all     — everything (including uninstalled marketplace + implicit skills) (全部（含 marketplace 未安装的 + 隐式 skill）)
+  //   marketplace — marketplace commands + skills (not necessarily installed) (marketplace 中的 command + skill（未必已安装）)
   if (type === 'all') {
-    // 不过滤
+    // No filter (不过滤)
   } else if (type === 'marketplace') {
     skills = skills.filter(s => s.source !== 'custom' && s.source !== 'bundled');
   } else {
-    // 默认：自建 + 内置（本地实际可用的）
+    // Default: custom + built-in (locally available) (默认：自建 + 内置（本地实际可用的）)
     skills = skills.filter(s => s.source === 'custom' || s.source === 'bundled');
   }
 
-  // 按来源筛选
+  // Filter by source (按来源筛选)
   if (source) {
     skills = skills.filter(s => s.source === source);
   }
 
-  // 搜索
+  // Search (搜索)
   if (search) {
     const q = search.toLowerCase();
     skills = skills.filter(s =>
@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
     );
   }
 
-  // 排序
+  // Sort (排序)
   if (sort === 'calls') {
     skills.sort((a, b) => (b.stats?.totalCalls || 0) - (a.stats?.totalCalls || 0));
   } else if (sort === 'recent') {
@@ -47,22 +47,22 @@ router.get('/', async (req, res) => {
   } else if (sort === 'name') {
     skills.sort((a, b) => a.name.localeCompare(b.name));
   } else {
-    // 默认：按来源分组，custom 在前
+    // Default: group by source, custom first (默认：按来源分组，custom 在前)
     const sourceOrder = { custom: 0, official: 1, trailofbits: 2, external: 3 };
     skills.sort((a, b) => (sourceOrder[a.source] || 9) - (sourceOrder[b.source] || 9));
   }
 
-  // 不返回 content 字段（列表模式精简），添加 invokeCommand（正确的 / 调用格式）
+  // Don't return content field (list mode slim), add invokeCommand (correct / invocation format) (不返回 content 字段（列表模式精简），添加 invokeCommand（正确的 / 调用格式）)
   let list = skills.map(({ content, ...rest }) => {
-    // 自建 skill: /name，插件 command: /pluginName:commandName
+    // Custom skill: /name, plugin command: /pluginName:commandName (自建 skill: /name，插件 command: /pluginName:commandName)
     const invokeCommand = rest.pluginName
       ? `/${rest.pluginName}:${rest.name}`
       : `/${rest.name}`;
     return { ...rest, invokeCommand };
   });
 
-  // 翻译：仅从缓存读取，不等 Claude 调用
-  // 未缓存的条目返回原文，后台异步翻译
+  // Translation: read from cache only, don't wait for Claude calls (翻译：仅从缓存读取，不等 Claude 调用)
+  // Uncached entries return original text, background async translation (未缓存的条目返回原文，后台异步翻译)
   if (lang && (lang === 'zh' || lang === 'en')) {
     const { getCachedTranslations, getCachedUseCases, triggerBackgroundTranslate } = require('../services/translator');
     const cachedDesc = getCachedTranslations(list.map(s => s.id), lang);
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
       useCases: cachedUC[s.id] || '',
     }));
 
-    // 后台触发未缓存项的翻译（不阻塞响应）
+    // Trigger background translation for uncached items (non-blocking response) (后台触发未缓存项的翻译（不阻塞响应）)
     const uncachedItems = req.cache.skills
       .filter(s => !cachedDesc[s.id] || !cachedUC[s.id])
       .map(s => ({ id: s.id, name: s.name, description: s.description }));
@@ -87,7 +87,7 @@ router.get('/', async (req, res) => {
   res.json(list);
 });
 
-// GET /api/skills/:id — 单个 skill 详情
+// GET /api/skills/:id — Single skill detail (单个 skill 详情)
 router.get('/:id', async (req, res) => {
   const skill = req.cache.skills.find(s => s.id === req.params.id);
   if (!skill) {
@@ -107,7 +107,7 @@ router.get('/:id', async (req, res) => {
       useCases: cachedUC[skill.id] || '',
     };
 
-    // 如果没缓存，后台触发翻译
+    // If not cached, trigger background translation (如果没缓存，后台触发翻译)
     if (!cachedDesc[skill.id] || !cachedUC[skill.id]) {
       triggerBackgroundTranslate(
         [{ id: skill.id, name: skill.name, description: skill.description }],
@@ -121,7 +121,7 @@ router.get('/:id', async (req, res) => {
   res.json(skill);
 });
 
-// GET /api/skills/:id/raw — skill.md 原始内容
+// GET /api/skills/:id/raw — skill.md raw content (skill.md 原始内容)
 router.get('/:id/raw', (req, res) => {
   const skill = req.cache.skills.find(s => s.id === req.params.id);
   if (!skill) {
@@ -130,7 +130,7 @@ router.get('/:id/raw', (req, res) => {
   res.type('text/plain').send(skill.content);
 });
 
-// POST /api/skills/:id/open — 用编辑器打开
+// POST /api/skills/:id/open — Open in editor (用编辑器打开)
 router.post('/:id/open', (req, res) => {
   const skill = req.cache.skills.find(s => s.id === req.params.id);
   if (!skill) {
@@ -148,7 +148,7 @@ router.post('/:id/open', (req, res) => {
   });
 });
 
-// POST /api/skills/:id/toggle — 启用/禁用（仅用户自建）
+// POST /api/skills/:id/toggle — Enable/disable (custom only) (启用/禁用（仅用户自建）)
 router.post('/:id/toggle', async (req, res) => {
   const skill = req.cache.skills.find(s => s.id === req.params.id);
   if (!skill) {
@@ -162,7 +162,7 @@ router.post('/:id/toggle', async (req, res) => {
   const isCurrentlyDisabled = disabled.includes(skill.id);
 
   if (isCurrentlyDisabled) {
-    // 启用：从列表移除 + 重命名文件
+    // Enable: remove from list + rename file (启用：从列表移除 + 重命名文件)
     const newList = disabled.filter(id => id !== skill.id);
     saveDisabledList(newList);
 
@@ -172,7 +172,7 @@ router.post('/:id/toggle', async (req, res) => {
       fs.renameSync(disabledPath, enabledPath);
     }
   } else {
-    // 禁用：加入列表 + 重命名文件
+    // Disable: add to list + rename file (禁用：加入列表 + 重命名文件)
     disabled.push(skill.id);
     saveDisabledList(disabled);
 
@@ -187,7 +187,7 @@ router.post('/:id/toggle', async (req, res) => {
   res.json({ ok: true, enabled: isCurrentlyDisabled });
 });
 
-// DELETE /api/skills/:id — 卸载（仅用户自建）
+// DELETE /api/skills/:id — Uninstall (custom only) (卸载（仅用户自建）)
 router.delete('/:id', async (req, res) => {
   const skill = req.cache.skills.find(s => s.id === req.params.id);
   if (!skill) {
@@ -197,7 +197,7 @@ router.delete('/:id', async (req, res) => {
     return res.status(403).json({ error: 'Only custom skills can be deleted' });
   }
 
-  // 删除整个 skill 目录
+  // Delete entire skill directory (删除整个 skill 目录)
   const skillDir = path.dirname(skill.filePath.replace(/\//g, path.sep));
   try {
     fs.rmSync(skillDir, { recursive: true, force: true });
@@ -205,7 +205,7 @@ router.delete('/:id', async (req, res) => {
     return res.status(500).json({ error: `Failed to delete: ${e.message}` });
   }
 
-  // 从禁用列表移除
+  // Remove from disabled list (从禁用列表移除)
   const disabled = loadDisabledList();
   saveDisabledList(disabled.filter(id => id !== skill.id));
 

@@ -4,7 +4,7 @@ const { applyDescriptions, getSkillDetail } = require('../services/enricher');
 const { applyTags, tagSkill, getTagEnums } = require('../services/tagger');
 const router = express.Router();
 
-// GET /api/discover — 在线 skill 目录
+// GET /api/discover — Online skill catalog (在线 skill 目录)
 router.get('/', async (req, res) => {
   const { category, action, complexity, search, sort, source: sourceFilter, lang, page: pageStr, pageSize: pageSizeStr } = req.query;
   const page = Math.max(1, parseInt(pageStr) || 1);
@@ -15,36 +15,36 @@ router.get('/', async (req, res) => {
     const config = loadConfig();
     let skills = await getOnlineSkills(config.githubToken);
 
-    // 标注已安装
+    // Mark installed status (标注已安装)
     skills = markInstalled(skills, req.cache.skills);
 
-    // 附加已有的中文描述和使用场景
+    // Attach existing Chinese descriptions and use cases (附加已有的中文描述和使用场景)
     applyDescriptions(skills);
 
-    // 附加已有的标签
+    // Attach existing tags (附加已有的标签)
     applyTags(skills, currentLang);
 
-    // 按来源筛选
+    // Filter by source (按来源筛选)
     if (sourceFilter) {
       skills = skills.filter(s => s.sourceType === sourceFilter || s.source === sourceFilter);
     }
 
-    // 按分类筛选
+    // Filter by category (按分类筛选)
     if (category && category !== 'all') {
       skills = skills.filter(s => s.category === category);
     }
 
-    // 按动作筛选
+    // Filter by action (按动作筛选)
     if (action && action !== 'all') {
       skills = skills.filter(s => s.actions && s.actions.includes(action));
     }
 
-    // 按复杂度筛选
+    // Filter by complexity (按复杂度筛选)
     if (complexity && complexity !== 'all') {
       skills = skills.filter(s => s.complexity === complexity);
     }
 
-    // 搜索（同时搜中英文描述 + 标签）
+    // Search (search both Chinese and English descriptions + tags) (搜索（同时搜中英文描述 + 标签）)
     if (search) {
       const q = search.toLowerCase();
       skills = skills.filter(s =>
@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
       );
     }
 
-    // 排序（每种排序都加 name 兜底，保证稳定）
+    // Sort (each sort adds name fallback for stability) (排序（每种排序都加 name 兜底，保证稳定）)
     if (sort === 'hot') {
       skills.sort((a, b) => {
         const diff = (b.repoStars || 0) - (a.repoStars || 0);
@@ -80,7 +80,7 @@ router.get('/', async (req, res) => {
     } else if (sort === 'name') {
       skills.sort((a, b) => a.name.localeCompare(b.name));
     } else {
-      // 默认：已安装排后面 → score → name
+      // Default: installed last -> score -> name (默认：已安装排后面 → score → name)
       skills.sort((a, b) => {
         if (a.installed !== b.installed) return a.installed ? 1 : -1;
         const diff = (b.score || 0) - (a.score || 0);
@@ -88,7 +88,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // 分页
+    // Pagination (分页)
     const total = skills.length;
     const start = (page - 1) * pageSize;
     const paged = skills.slice(start, start + pageSize);
@@ -105,7 +105,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/discover/detail?url=xxx — 按需获取单个 skill 详细信息（含翻译）
+// GET /api/discover/detail?url=xxx — On-demand fetch single skill detail (with translation) (按需获取单个 skill 详细信息（含翻译）)
 router.get('/detail', async (req, res) => {
   const { url, name } = req.query;
   if (!url && !name) {
@@ -116,7 +116,7 @@ router.get('/detail', async (req, res) => {
     const config = loadConfig();
     const skills = await getOnlineSkills(config.githubToken);
 
-    // 找到目标 skill
+    // Find target skill (找到目标 skill)
     const skill = skills.find(s =>
       (url && s.repoUrl === url) ||
       (name && s.name.toLowerCase() === name.toLowerCase())
@@ -126,10 +126,10 @@ router.get('/detail', async (req, res) => {
       return res.status(404).json({ error: 'Skill not found' });
     }
 
-    // 按需拉详情 + 翻译
+    // On-demand fetch detail + translation (按需拉详情 + 翻译)
     const detail = await getSkillDetail(skill, config.githubToken);
 
-    // 按需打标签
+    // On-demand tagging (按需打标签)
     const tags = await tagSkill(skill);
 
     res.json({
@@ -149,17 +149,17 @@ router.get('/detail', async (req, res) => {
   }
 });
 
-// GET /api/discover/enums — 标签枚举定义（前端筛选器用）
+// GET /api/discover/enums — Tag enum definitions (for frontend filters) (标签枚举定义（前端筛选器用）)
 router.get('/enums', (req, res) => {
   res.json(getTagEnums());
 });
 
-// GET /api/discover/categories — 分类列表（基于 applyTags 后的实际 category 统计）
+// GET /api/discover/categories — Category list (based on actual category stats after applyTags) (分类列表（基于 applyTags 后的实际 category 统计）)
 router.get('/categories', async (req, res) => {
   try {
     const config = loadConfig();
     let skills = await getOnlineSkills(config.githubToken);
-    // 先 applyTags 再统计，保证和列表页筛选一致
+    // Apply tags first then count, to ensure consistency with list page filtering (先 applyTags 再统计，保证和列表页筛选一致)
     applyTags(skills, req.query.lang || 'en');
     res.json(getCategories(skills));
   } catch (e) {
@@ -167,7 +167,7 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// POST /api/discover/refresh — 手动强制刷新
+// POST /api/discover/refresh — Manual force refresh (手动强制刷新)
 router.post('/refresh', async (req, res) => {
   try {
     const config = loadConfig();

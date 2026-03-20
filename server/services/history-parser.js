@@ -3,13 +3,13 @@ const crypto = require('crypto');
 const readline = require('readline');
 const { HISTORY_FILE, STATS_CACHE, sanitizePath } = require('../utils/paths');
 
-// 内置命令黑名单（动态生成：从 skill-scanner 提取的内置命令名）
+// Built-in command blacklist (dynamically generated: built-in command names extracted from skill-scanner) (内置命令黑名单（动态生成：从 skill-scanner 提取的内置命令名）)
 let _builtinCache = null;
 function getBuiltinCommands() {
   if (_builtinCache) return _builtinCache;
   try {
     const { scanAllSkills } = require('./skill-scanner');
-    // 避免循环依赖：直接从 cli.js 提取
+    // Avoid circular dependency: extract directly from cli.js (避免循环依赖：直接从 cli.js 提取)
     const fs2 = require('fs');
     const path2 = require('path');
     const { execSync } = require('child_process');
@@ -21,7 +21,7 @@ function getBuiltinCommands() {
     } catch {}
     if (cliPath) {
       const source = fs2.readFileSync(cliPath, 'utf-8');
-      // 匹配 type:"local-jsx",name:"xxx" — 这是内置命令的准确标记
+      // Match type:"local-jsx",name:"xxx" — the precise marker for built-in commands (匹配 type:"local-jsx",name:"xxx" — 这是内置命令的准确标记)
       const regex = /type:"local-jsx",name:"([a-z][a-z0-9-]*)"/g;
       const names = new Set();
       let m;
@@ -30,7 +30,7 @@ function getBuiltinCommands() {
       return names;
     }
   } catch {}
-  // fallback：基础黑名单
+  // Fallback: basic blacklist (fallback：基础黑名单)
   _builtinCache = new Set([
     'help', 'clear', 'compact', 'config', 'cost', 'doctor', 'init',
     'login', 'logout', 'mcp', 'memory', 'model', 'permissions',
@@ -46,13 +46,13 @@ function getBuiltinCommands() {
   return _builtinCache;
 }
 
-// 保持向后兼容的导出名
+// Backward-compatible export name (保持向后兼容的导出名)
 const BUILTIN_COMMANDS = { has: (name) => getBuiltinCommands().has(name) };
 
 /**
- * 从 history.jsonl 增量解析 skill 调用记录
+ * Incrementally parse skill invocation records from history.jsonl (从 history.jsonl 增量解析 skill 调用记录)
  *
- * 返回: { calls: SkillCall[], lastOffset: number, lastLineHash: string }
+ * Returns: { calls: SkillCall[], lastOffset: number, lastLineHash: string } (返回)
  */
 async function parseHistory(existingCalls = [], lastOffset = 0, lastLineHash = '') {
   if (!fs.existsSync(HISTORY_FILE)) {
@@ -61,24 +61,24 @@ async function parseHistory(existingCalls = [], lastOffset = 0, lastLineHash = '
 
   const stat = fs.statSync(HISTORY_FILE);
 
-  // 如果文件比上次小，说明被截断/重写，需要全量重解析
+  // If file is smaller than last offset, it was truncated/rewritten, needs full re-parse (如果文件比上次小，说明被截断/重写，需要全量重解析)
   if (stat.size < lastOffset) {
-    console.log('[history-parser] 文件被截断，全量重解析');
+    console.log('[history-parser] File truncated, performing full re-parse');
     lastOffset = 0;
     lastLineHash = '';
     existingCalls = [];
   }
 
-  // 如果没有增长，直接返回
+  // If no growth, return directly (如果没有增长，直接返回)
   if (stat.size === lastOffset && lastOffset > 0) {
     return { calls: existingCalls, lastOffset, lastLineHash };
   }
 
-  // 校验 lastLineHash（如果有 offset）
+  // Verify lastLineHash (if offset exists) (校验 lastLineHash（如果有 offset）)
   if (lastOffset > 0 && lastLineHash) {
     const verified = await verifyLastLineHash(lastOffset, lastLineHash);
     if (!verified) {
-      console.log('[history-parser] lastLineHash 不匹配，全量重解析');
+      console.log('[history-parser] lastLineHash mismatch, performing full re-parse');
       lastOffset = 0;
       existingCalls = [];
     }
@@ -125,18 +125,18 @@ async function parseHistory(existingCalls = [], lastOffset = 0, lastLineHash = '
   }
 
   if (parseErrors > 0) {
-    console.log(`[history-parser] ${parseErrors} 条记录解析失败（已跳过）`);
+    console.log(`[history-parser] ${parseErrors} records failed to parse (skipped)`);
   }
 
   return { calls, lastOffset: newOffset, lastLineHash: currentLineHash };
 }
 
 /**
- * 校验文件在 lastOffset 位置附近的内容是否与之前一致
+ * Verify that file content near lastOffset matches previous state (校验文件在 lastOffset 位置附近的内容是否与之前一致)
  */
 async function verifyLastLineHash(offset, expectedHash) {
   return new Promise((resolve) => {
-    // 读取 offset 前的最后一行来校验
+    // Read last line before offset for verification (读取 offset 前的最后一行来校验)
     const start = Math.max(0, offset - 500);
     const stream = fs.createReadStream(HISTORY_FILE, {
       encoding: 'utf-8',
@@ -158,7 +158,7 @@ async function verifyLastLineHash(offset, expectedHash) {
 }
 
 /**
- * 加载缓存的统计数据
+ * Load cached stats data (加载缓存的统计数据)
  */
 function loadStatsCache() {
   if (!fs.existsSync(STATS_CACHE)) {
@@ -167,7 +167,7 @@ function loadStatsCache() {
   try {
     const data = JSON.parse(fs.readFileSync(STATS_CACHE, 'utf-8'));
     if (data.schemaVersion !== 1) {
-      console.log('[history-parser] schema 版本变更，全量重解析');
+      console.log('[history-parser] Schema version changed, performing full re-parse');
       return { schemaVersion: 1, lastOffset: 0, lastLineHash: '', calls: [] };
     }
     return data;
@@ -177,7 +177,7 @@ function loadStatsCache() {
 }
 
 /**
- * 保存统计缓存
+ * Save stats cache (保存统计缓存)
  */
 function saveStatsCache(data) {
   fs.writeFileSync(STATS_CACHE, JSON.stringify({

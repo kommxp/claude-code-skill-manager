@@ -1,13 +1,13 @@
 /**
- * tagger.js — AI 自动标签引擎
+ * tagger.js — AI auto-tagging engine (AI 自动标签引擎)
  *
- * 用 Claude Haiku 给 skill 打多维标签：
- *   - category（领域大类，15 选 1）
- *   - actions（动作类型，12 选 1-3）
- *   - targets（作用对象，受控开放）
- *   - complexity（复杂度，3 选 1）
+ * Uses Claude Haiku to tag skills with multi-dimensional labels (用 Claude Haiku 给 skill 打多维标签):
+ *   - category (domain category, pick 1 of 15) (领域大类，15 选 1)
+ *   - actions (action type, pick 1-3 of 12) (动作类型，12 选 1-3)
+ *   - targets (target object, controlled open) (作用对象，受控开放)
+ *   - complexity (complexity level, pick 1 of 3) (复杂度，3 选 1)
  *
- * 后台慢补：每轮补 10 个，按 score 从高到低优先
+ * Background slow-fill: 10 per round, prioritized by score descending (后台慢补：每轮补 10 个，按 score 从高到低优先)
  */
 
 const fs = require('fs');
@@ -15,7 +15,7 @@ const { spawn } = require('child_process');
 const { TAGS_CACHE } = require('../utils/paths');
 
 // ============================================================
-// 枚举定义（中英文映射）
+// Enum definitions (Chinese-English mapping) (枚举定义（中英文映射）)
 // ============================================================
 
 const CATEGORIES = {
@@ -61,7 +61,7 @@ const CATEGORY_IDS = Object.keys(CATEGORIES);
 const ACTION_IDS = Object.keys(ACTIONS);
 
 // ============================================================
-// 标签缓存
+// Tags cache (标签缓存)
 // ============================================================
 
 // { [repoUrl]: { category, actions, targets, complexity, confidence, taggedAt } }
@@ -81,25 +81,25 @@ function saveTagsCache() {
   try {
     fs.writeFileSync(TAGS_CACHE, JSON.stringify(tagsCache), 'utf-8');
   } catch (e) {
-    console.error(`[tagger] 缓存写入失败: ${e.message}`);
+    console.error(`[tagger] Cache write failed: ${e.message}`);
   }
 }
 
 // ============================================================
-// 对外接口
+// Public API (对外接口)
 // ============================================================
 
 /**
- * 启动标签引擎
+ * Start tagging engine (启动标签引擎)
  */
 function startTagger(getSkillsFn) {
   loadTagsCache();
-  console.log(`[tagger] 标签缓存加载: ${Object.keys(tagsCache).length} 条`);
+  console.log(`[tagger] Tags cache loaded: ${Object.keys(tagsCache).length} entries`);
 
-  // 后台慢补：每 5 分钟补 10 个
+  // Background slow-fill: 10 every 5 min (后台慢补：每 5 分钟补 10 个)
   bgTimer = setInterval(() => {
     backgroundTag(getSkillsFn).catch(e => {
-      console.log(`[tagger] 后台打标失败: ${e.message}`);
+      console.log(`[tagger] Background tagging failed: ${e.message}`);
     });
   }, 5 * 60 * 1000);
 
@@ -107,14 +107,14 @@ function startTagger(getSkillsFn) {
 }
 
 /**
- * 给 skill 列表附加已有的标签缓存
+ * Attach existing tag cache to skill list (给 skill 列表附加已有的标签缓存)
  */
 function applyTags(skills, lang) {
   for (const s of skills) {
     const cached = tagsCache[s.repoUrl];
     if (!cached) continue;
 
-    // 用新标签覆盖旧的粗分类
+    // Override old coarse category with new tags (用新标签覆盖旧的粗分类)
     if (cached.category) {
       s.category = cached.category;
       const catMeta = CATEGORIES[cached.category];
@@ -144,7 +144,7 @@ function applyTags(skills, lang) {
 }
 
 /**
- * 按需给单个 skill 打标签
+ * Tag a single skill on-demand (按需给单个 skill 打标签)
  */
 async function tagSkill(skill) {
   const key = skill.repoUrl;
@@ -162,21 +162,21 @@ async function tagSkill(skill) {
 }
 
 /**
- * 获取枚举定义（前端用）
+ * Get enum definitions (for frontend) (获取枚举定义（前端用）)
  */
 function getTagEnums() {
   return { categories: CATEGORIES, actions: ACTIONS, complexity: COMPLEXITY };
 }
 
 // ============================================================
-// 后台慢补
+// Background slow-fill (后台慢补)
 // ============================================================
 
 async function backgroundTag(getSkillsFn) {
   const skills = await getSkillsFn();
   if (!skills || skills.length === 0) return;
 
-  // 找缺标签的高分 skill
+  // Find high-score skills missing tags (找缺标签的高分 skill)
   const needTag = skills
     .filter(s => {
       if (!s.repoUrl) return false;
@@ -188,7 +188,7 @@ async function backgroundTag(getSkillsFn) {
 
   if (needTag.length === 0) return;
 
-  console.log(`[tagger] 后台打标: ${needTag.length} 个 skill`);
+  console.log(`[tagger] Background tagging: ${needTag.length} skills`);
   let tagged = 0;
 
   for (const skill of needTag) {
@@ -199,18 +199,18 @@ async function backgroundTag(getSkillsFn) {
         tagged++;
       }
     } catch (e) {
-      console.log(`[tagger] "${skill.name}" 打标失败: ${e.message}`);
+      console.log(`[tagger] "${skill.name}" tagging failed: ${e.message}`);
     }
   }
 
   if (tagged > 0) {
     saveTagsCache();
-    console.log(`[tagger] 后台打标完成: ${tagged} 个`);
+    console.log(`[tagger] Background tagging complete: ${tagged}`);
   }
 }
 
 // ============================================================
-// Claude CLI 调用
+// Claude CLI invocation (Claude CLI 调用)
 // ============================================================
 
 const TAGGING_PROMPT = `You are a skill classification engine. Analyze the given skill and output structured tags in JSON.
@@ -280,30 +280,30 @@ Output:`;
     child.on('error', err => reject(err));
     child.on('close', () => {
       const text = stdout.trim();
-      if (!text) { reject(new Error('Claude 无输出')); return; }
+      if (!text) { reject(new Error('Claude returned no output')); return; }
 
       try {
         const clean = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         const parsed = JSON.parse(clean);
 
-        // 校验 category
+        // Validate category (校验 category)
         const category = CATEGORY_IDS.includes(parsed.category) ? parsed.category : null;
-        // 校验 actions
+        // Validate actions (校验 actions)
         const actions = (parsed.actions || []).filter(a => ACTION_IDS.includes(a)).slice(0, 3);
-        // targets 保持原样（受控开放）
+        // Keep targets as-is (controlled open) (targets 保持原样（受控开放）)
         const targets = (parsed.targets || []).slice(0, 3).map(t => String(t).toLowerCase().replace(/\s+/g, '-'));
-        // 校验 complexity
+        // Validate complexity (校验 complexity)
         const complexity = ['simple', 'interactive', 'pipeline'].includes(parsed.complexity) ? parsed.complexity : 'simple';
         const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0.5;
 
         if (!category) {
-          reject(new Error(`无效 category: ${parsed.category}`));
+          reject(new Error(`Invalid category: ${parsed.category}`));
           return;
         }
 
         resolve({ category, actions, targets, complexity, confidence });
       } catch (e) {
-        reject(new Error(`JSON 解析失败: ${text.slice(0, 100)}`));
+        reject(new Error(`JSON parse failed: ${text.slice(0, 100)}`));
       }
     });
 

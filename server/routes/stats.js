@@ -31,14 +31,14 @@ router.get('/trend', (req, res) => {
     filteredCalls = filteredCalls.filter(c => c.skillName === skillFilter);
   }
 
-  // 按日期聚合
+  // Aggregate by date (按日期聚合)
   const byDate = {};
   for (const call of filteredCalls) {
     const date = new Date(call.timestamp).toISOString().slice(0, 10);
     byDate[date] = (byDate[date] || 0) + 1;
   }
 
-  // 填充缺失日期
+  // Fill missing dates (填充缺失日期)
   const result = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now - i * 24 * 60 * 60 * 1000);
@@ -51,7 +51,7 @@ router.get('/trend', (req, res) => {
 
 // GET /api/stats/heatmap
 router.get('/heatmap', (req, res) => {
-  // GitHub 风格热力图：按天统计过去 365 天
+  // GitHub-style heatmap: daily stats for the past 365 days (GitHub 风格热力图：按天统计过去 365 天)
   const now = Date.now();
   const yearAgo = now - 365 * 24 * 60 * 60 * 1000;
 
@@ -72,7 +72,7 @@ router.get('/heatmap', (req, res) => {
   res.json({ data });
 });
 
-// GET /api/stats/translations — 翻译缓存统计
+// GET /api/stats/translations — Translation cache stats (翻译缓存统计)
 router.get('/translations', (req, res) => {
   res.json(getCacheStats());
 });

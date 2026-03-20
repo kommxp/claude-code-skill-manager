@@ -15,12 +15,12 @@ module.exports = {
   TAGS_CACHE: path.join(CLAUDE_DIR, 'skill-manager-tags.json'),
   OVERRIDES_FILE: path.join(__dirname, '..', 'data', 'overrides.json'),
 
-  /** 将绝对路径转为 POSIX 风格存储 */
+  /** Convert absolute path to POSIX style for storage (将绝对路径转为 POSIX 风格存储) */
   toPosix(p) {
     return p.replace(/\\/g, '/');
   },
 
-  /** 脱敏路径：隐藏用户名部分 */
+  /** Sanitize path: hide username portion (脱敏路径：隐藏用户名部分) */
   sanitizePath(p) {
     const home = os.homedir();
     if (p.startsWith(home)) {
