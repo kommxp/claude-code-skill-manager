@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { execFile, spawn } = require('child_process');
+const { execFile } = require('child_process');
 const { loadDisabledList, saveDisabledList } = require('../services/skill-scanner');
 const { batchTranslate, batchUseCases, getCacheStats } = require('../services/translator');
 const router = express.Router();

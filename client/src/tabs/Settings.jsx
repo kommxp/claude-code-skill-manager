@@ -11,7 +11,7 @@ export default function Settings() {
   useEffect(() => {
     api.getConfig().then(cfg => {
       setCurrentToken(cfg.githubToken || '')
-    }).catch(() => {})
+    }).catch(e => console.log('[Settings] Config load failed:', e.message))
   }, [])
 
   const handleSave = async () => {

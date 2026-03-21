@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 const { CLAUDE_DIR } = require('../utils/paths');
+const { callClaude: callClaudeCli, parseClaudeJson } = require('../utils/claude-cli');
 
 const CACHE_FILE = path.join(CLAUDE_DIR, 'skill-manager-translations.json');
 
@@ -164,50 +164,10 @@ async function callClaudeBatchTranslate(items, targetLang) {
 }
 
 /**
- * Call Claude CLI (reusing CLAUDE.md pattern) (调用 Claude CLI（复用 CLAUDE.md 方案）)
+ * Call Claude CLI (wrapper using shared utility) (调用 Claude CLI（使用共享工具）)
  */
 function callClaude(prompt) {
-  return new Promise((resolve, reject) => {
-    const env = Object.assign({}, process.env);
-    delete env.CLAUDECODE;
-    delete env.ANTHROPIC_BASE_URL;
-    delete env.ANTHROPIC_API_KEY;
-
-    // Auto-detect Git Bash path on Windows
-    if (process.platform === 'win32') {
-      const gitBashCandidates = [
-        process.env.CLAUDE_CODE_GIT_BASH_PATH,
-        'C:\\Program Files\\Git\\bin\\bash.exe',
-        'D:\\Git\\bin\\bash.exe',
-        'C:\\Git\\bin\\bash.exe',
-      ];
-      const fs = require('fs');
-      const gitBash = gitBashCandidates.find(p => p && fs.existsSync(p));
-      if (gitBash) env.CLAUDE_CODE_GIT_BASH_PATH = gitBash;
-    }
-
-    const child = spawn('claude', ['-p', '--max-turns', '1', '--no-session-persistence', '--model', 'sonnet'], {
-      env,
-      shell: true,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', d => { stdout += d; });
-    child.stderr.on('data', d => { stderr += d; });
-    child.on('error', err => reject(err));
-    child.on('close', code => {
-      if (stdout.trim()) {
-        resolve(stdout.trim());
-        return;
-      }
-      reject(new Error(`Claude CLI exit ${code}: ${stderr}`));
-    });
-
-    child.stdin.write(prompt);
-    child.stdin.end();
-  });
+  return callClaudeCli(prompt, { model: 'sonnet' });
 }
 
 /**

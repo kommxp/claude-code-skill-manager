@@ -9,8 +9,14 @@
 
 const fs = require('fs');
 const https = require('https');
-const { spawn } = require('child_process');
 const { DESC_CACHE } = require('../utils/paths');
+const { callClaude, parseClaudeJson } = require('../utils/claude-cli');
+
+// Constants (常量)
+const BG_ENRICH_INTERVAL = 10 * 60 * 1000; // Background enrichment interval: 10 min (后台慢补间隔)
+const BG_BATCH_SIZE = 10;                   // Skills per background round (每轮后台处理数量)
+const MAX_DESC_LENGTH = 500;                // Max description length (描述最大长度)
+const MAX_DESC_LINES = 3;                   // Max description lines to extract (提取描述最大行数)
 
 // Description cache: { [repoUrl]: { en, zh, useCase, enrichedAt } } (描述缓存)
 let descCache = {};
@@ -33,7 +39,7 @@ function startEnricher(getSkillsFn) {
     backgroundEnrich(getSkillsFn).catch(e => {
       console.log(`[enricher] Background enrichment failed: ${e.message}`);
     });
-  }, 10 * 60 * 1000);
+  }, BG_ENRICH_INTERVAL);
 
   if (bgTimer.unref) bgTimer.unref();
 }
@@ -98,7 +104,9 @@ async function enrichMarketplaceDescriptions(skills, token) {
               source: 'trees-api',
             };
           }
-        } catch {}
+        } catch (e) {
+          console.log(`[enricher] Blob read failed for "${skill.name}": ${e.message}`);
+        }
       }
 
       console.log(`[enricher] Trees API "${repoFullName}": processed ${repoSkills.length}`);
@@ -132,7 +140,9 @@ async function getSkillDetail(skill, token) {
       if (readmeContent) {
         enDesc = extractDescription(readmeContent);
       }
-    } catch {}
+    } catch (e) {
+      console.log(`[enricher] README fetch failed for "${skill.name}": ${e.message}`);
+    }
   }
 
   if (!enDesc) enDesc = skill.description || skill.name;
@@ -206,7 +216,7 @@ async function backgroundEnrich(getSkillsFn) {
       return !cached || !cached.zh || !cached.useCaseZh;
     })
     .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 10);
+    .slice(0, BG_BATCH_SIZE);
 
   if (needEnrich.length === 0) return;
 
@@ -223,7 +233,9 @@ async function backgroundEnrich(getSkillsFn) {
         try {
           const readme = await fetchReadme(skill, null);
           if (readme) enDesc = extractDescription(readme);
-        } catch {}
+        } catch (e) {
+          console.log(`[enricher] Background README fetch failed for "${skill.name}": ${e.message}`);
+        }
       }
 
       if (!enDesc) enDesc = skill.description || skill.name;
@@ -273,11 +285,11 @@ function extractDescription(content) {
     if (trimmed.startsWith('<!--')) continue;
 
     descLines.push(trimmed);
-    // Take first 3 effective lines (取前 3 行有效文本)
-    if (descLines.length >= 3) break;
+    // Take first N effective lines (取前 N 行有效文本)
+    if (descLines.length >= MAX_DESC_LINES) break;
   }
 
-  return descLines.join(' ').slice(0, 500) || null;
+  return descLines.join(' ').slice(0, MAX_DESC_LENGTH) || null;
 }
 
 /**
@@ -294,7 +306,9 @@ async function fetchReadme(skill, token) {
     if (data && data.content) {
       return Buffer.from(data.content, 'base64').toString('utf-8');
     }
-  } catch {}
+  } catch (e) {
+    console.log(`[enricher] GitHub README API failed for "${repoFullName}": ${e.message}`);
+  }
 
   return null;
 }
@@ -302,9 +316,8 @@ async function fetchReadme(skill, token) {
 /**
  * Call Claude CLI for translation + use case generation (调用 Claude CLI 翻译 + 生成使用场景)
  */
-function callClaudeForEnrich(skillName, enDesc) {
-  return new Promise((resolve, reject) => {
-    const prompt = `You are a technical translator. Given a Claude Code skill:
+async function callClaudeForEnrich(skillName, enDesc) {
+  const prompt = `You are a technical translator. Given a Claude Code skill:
 
 Name: ${skillName}
 Description: ${enDesc}
@@ -312,52 +325,22 @@ Description: ${enDesc}
 Output ONLY valid JSON (no markdown, no code fences):
 {"zh":"一句中文描述（20-50字）","useCaseZh":"使用场景（中文，30-80字，说明什么时候用、适合谁）","useCaseEn":"Use case (English, 30-80 words, when to use, who benefits)"}`;
 
-    const env = Object.assign({}, process.env);
-    // Auto-detect Git Bash path (自动检测 Git Bash 路径)
-    const gitBashCandidates = [
-      process.env.CLAUDE_CODE_GIT_BASH_PATH,
-      'C:\\Program Files\\Git\\bin\\bash.exe',
-      'D:\\Git\\bin\\bash.exe',
-      'C:\\Git\\bin\\bash.exe',
-    ];
-    const gitBash = gitBashCandidates.find(p => p && require('fs').existsSync(p));
-    if (gitBash) env.CLAUDE_CODE_GIT_BASH_PATH = gitBash;
-    delete env.CLAUDECODE;
-    delete env.ANTHROPIC_BASE_URL;
-    delete env.ANTHROPIC_API_KEY;
-
-    const child = spawn('claude', ['-p', '--max-turns', '1', '--no-session-persistence', '--model', 'haiku'], {
-      env, shell: true, stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    let stdout = '', stderr = '';
-    child.stdout.on('data', d => { stdout += d; });
-    child.stderr.on('data', d => { stderr += d; });
-    child.on('error', err => reject(err));
-    child.on('close', () => {
-      const text = stdout.trim();
-      if (!text) {
-        reject(new Error('Claude returned no output'));
-        return;
-      }
-      try {
-        // Remove possible markdown fences (去除可能的 markdown 围栏)
-        const clean = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        const parsed = JSON.parse(clean);
-        resolve({
-          zh: parsed.zh || enDesc,
-          useCaseZh: parsed.useCaseZh || parsed.useCase || '',
-          useCaseEn: parsed.useCaseEn || '',
-        });
-      } catch {
-        // If JSON parsing fails, use raw text (如果 JSON 解析失败，直接用原文)
-        resolve({ zh: text.slice(0, 200), useCaseZh: '', useCaseEn: '' });
-      }
-    });
-
-    child.stdin.write(prompt);
-    child.stdin.end();
-  });
+  try {
+    const text = await callClaude(prompt);
+    try {
+      const parsed = parseClaudeJson(text);
+      return {
+        zh: parsed.zh || enDesc,
+        useCaseZh: parsed.useCaseZh || parsed.useCase || '',
+        useCaseEn: parsed.useCaseEn || '',
+      };
+    } catch {
+      // If JSON parsing fails, use raw text (如果 JSON 解析失败，直接用原文)
+      return { zh: text.slice(0, 200), useCaseZh: '', useCaseEn: '' };
+    }
+  } catch (e) {
+    throw e;
+  }
 }
 
 // ============================================================

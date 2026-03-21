@@ -11,8 +11,8 @@
  */
 
 const fs = require('fs');
-const { spawn } = require('child_process');
 const { TAGS_CACHE } = require('../utils/paths');
+const { callClaude, parseClaudeJson } = require('../utils/claude-cli');
 
 // ============================================================
 // Enum definitions (Chinese-English mapping) (枚举定义（中英文映射）)
@@ -60,6 +60,11 @@ const COMPLEXITY = {
 const CATEGORY_IDS = Object.keys(CATEGORIES);
 const ACTION_IDS = Object.keys(ACTIONS);
 
+// Constants (常量)
+const BG_TAG_INTERVAL = 5 * 60 * 1000;  // Background tagging interval: 5 min (后台打标签间隔)
+const BG_BATCH_SIZE = 10;                // Skills per background round (每轮后台处理数量)
+const DEFAULT_CONFIDENCE = 0.5;          // Default confidence when not specified (默认置信度)
+
 // ============================================================
 // Tags cache (标签缓存)
 // ============================================================
@@ -101,7 +106,7 @@ function startTagger(getSkillsFn) {
     backgroundTag(getSkillsFn).catch(e => {
       console.log(`[tagger] Background tagging failed: ${e.message}`);
     });
-  }, 5 * 60 * 1000);
+  }, BG_TAG_INTERVAL);
 
   if (bgTimer.unref) bgTimer.unref();
 }
@@ -184,7 +189,7 @@ async function backgroundTag(getSkillsFn) {
       return !cached || !cached.category;
     })
     .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 10);
+    .slice(0, BG_BATCH_SIZE);
 
   if (needTag.length === 0) return;
 
@@ -252,64 +257,33 @@ Classify the following skill. Output ONLY valid JSON, no explanation.
 
 `;
 
-function callClaudeForTags(name, description) {
-  return new Promise((resolve, reject) => {
-    const input = `Input: {"name": "${name}", "description": "${(description || '').replace(/"/g, '\\"').slice(0, 300)}"}
+async function callClaudeForTags(name, description) {
+  const input = `Input: {"name": "${name}", "description": "${(description || '').replace(/"/g, '\\"').slice(0, 300)}"}
 Output:`;
 
-    const env = Object.assign({}, process.env);
-    const gitBashCandidates = [
-      process.env.CLAUDE_CODE_GIT_BASH_PATH,
-      'C:\\Program Files\\Git\\bin\\bash.exe',
-      'D:\\Git\\bin\\bash.exe',
-      'C:\\Git\\bin\\bash.exe',
-    ];
-    const gitBash = gitBashCandidates.find(p => p && fs.existsSync(p));
-    if (gitBash) env.CLAUDE_CODE_GIT_BASH_PATH = gitBash;
-    delete env.CLAUDECODE;
-    delete env.ANTHROPIC_BASE_URL;
-    delete env.ANTHROPIC_API_KEY;
+  const text = await callClaude(TAGGING_PROMPT + input);
 
-    const child = spawn('claude', ['-p', '--max-turns', '1', '--no-session-persistence', '--model', 'haiku'], {
-      env, shell: true, stdio: ['pipe', 'pipe', 'pipe'],
-    });
+  try {
+    const parsed = parseClaudeJson(text);
 
-    let stdout = '', stderr = '';
-    child.stdout.on('data', d => { stdout += d; });
-    child.stderr.on('data', d => { stderr += d; });
-    child.on('error', err => reject(err));
-    child.on('close', () => {
-      const text = stdout.trim();
-      if (!text) { reject(new Error('Claude returned no output')); return; }
+    // Validate category (校验 category)
+    const category = CATEGORY_IDS.includes(parsed.category) ? parsed.category : null;
+    // Validate actions (校验 actions)
+    const actions = (parsed.actions || []).filter(a => ACTION_IDS.includes(a)).slice(0, 3);
+    // Keep targets as-is (controlled open) (targets 保持原样（受控开放）)
+    const targets = (parsed.targets || []).slice(0, 3).map(t => String(t).toLowerCase().replace(/\s+/g, '-'));
+    // Validate complexity (校验 complexity)
+    const complexity = ['simple', 'interactive', 'pipeline'].includes(parsed.complexity) ? parsed.complexity : 'simple';
+    const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : DEFAULT_CONFIDENCE;
 
-      try {
-        const clean = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        const parsed = JSON.parse(clean);
+    if (!category) {
+      throw new Error(`Invalid category: ${parsed.category}`);
+    }
 
-        // Validate category (校验 category)
-        const category = CATEGORY_IDS.includes(parsed.category) ? parsed.category : null;
-        // Validate actions (校验 actions)
-        const actions = (parsed.actions || []).filter(a => ACTION_IDS.includes(a)).slice(0, 3);
-        // Keep targets as-is (controlled open) (targets 保持原样（受控开放）)
-        const targets = (parsed.targets || []).slice(0, 3).map(t => String(t).toLowerCase().replace(/\s+/g, '-'));
-        // Validate complexity (校验 complexity)
-        const complexity = ['simple', 'interactive', 'pipeline'].includes(parsed.complexity) ? parsed.complexity : 'simple';
-        const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0.5;
-
-        if (!category) {
-          reject(new Error(`Invalid category: ${parsed.category}`));
-          return;
-        }
-
-        resolve({ category, actions, targets, complexity, confidence });
-      } catch (e) {
-        reject(new Error(`JSON parse failed: ${text.slice(0, 100)}`));
-      }
-    });
-
-    child.stdin.write(TAGGING_PROMPT + input);
-    child.stdin.end();
-  });
+    return { category, actions, targets, complexity, confidence };
+  } catch (e) {
+    throw new Error(`JSON parse failed: ${text.slice(0, 100)}`);
+  }
 }
 
 module.exports = {

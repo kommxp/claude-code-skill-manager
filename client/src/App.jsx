@@ -48,7 +48,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center" role="status" aria-busy="true">
         <div className="text-zinc-400">{t('loading')}</div>
       </div>
     )
@@ -60,11 +60,12 @@ export default function App() {
       <header className="border-b border-zinc-800 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <h1 className="text-lg font-semibold text-zinc-100">{t('app.title')}</h1>
-          <nav className="flex gap-1">
+          <nav className="flex gap-1" aria-label="Main navigation">
             {TABS.map(tb => (
               <button
                 key={tb.id}
                 onClick={() => setTab(tb.id)}
+                aria-current={tab === tb.id ? 'page' : undefined}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                   tab === tb.id
                     ? 'bg-zinc-800 text-zinc-100'

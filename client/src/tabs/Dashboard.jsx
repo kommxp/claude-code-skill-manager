@@ -42,7 +42,7 @@ export default function Dashboard({ overview }) {
   const [trendRange, setTrendRange] = useState('30d')
 
   useEffect(() => {
-    api.trend(trendRange).then(setTrend).catch(() => {})
+    api.trend(trendRange).then(setTrend).catch(e => console.log('[Dashboard] Trend load failed:', e.message))
   }, [trendRange])
 
   if (!overview) {
