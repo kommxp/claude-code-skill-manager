@@ -12,13 +12,6 @@ A local dashboard for managing, discovering, and analyzing [Claude Code](https:/
 - **Settings** — Configure GitHub token for higher API limits
 - **Bilingual** — Full Chinese/English UI switching
 
-## Screenshot
-
-<!-- Add a screenshot of the dashboard here -->
-<!-- ![Dashboard Screenshot](docs/screenshot.png) -->
-
-> Screenshots coming soon. Run `npm start` to see the dashboard in action.
-
 ## Quick Start
 
 ### Prerequisites
