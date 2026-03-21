@@ -10,6 +10,13 @@ A local dashboard for managing, discovering, and analyzing [Claude Code](https:/
 - **Settings** — Configure GitHub token for higher API limits
 - **Bilingual** — Full Chinese/English UI switching
 
+## Screenshot
+
+<!-- Add a screenshot of the dashboard here -->
+<!-- ![Dashboard Screenshot](docs/screenshot.png) -->
+
+> Screenshots coming soon. Run `npm start` to see the dashboard in action.
+
 ## Quick Start
 
 ### Prerequisites
@@ -95,6 +102,54 @@ The discover engine runs in the background with zero configuration:
 ├── start.sh                  # Unix launcher
 └── package.json
 ```
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/stats/overview` | Dashboard overview (total skills, calls, top 5, insights) |
+| GET | `/api/stats/trend?range=30d` | Call trend data (7d/30d/90d) |
+| GET | `/api/skills?lang=en` | List all local skills with stats |
+| POST | `/api/skills/:id/toggle` | Enable/disable a custom skill |
+| DELETE | `/api/skills/:id` | Delete a custom skill |
+| GET | `/api/discover?category=&sort=hot&page=1` | Browse online skill catalog |
+| GET | `/api/discover/detail/:name` | Get enriched skill detail (description, use cases) |
+| GET | `/api/discover/categories` | List available categories with counts |
+| POST | `/api/discover/refresh` | Trigger re-index of online skills |
+| POST | `/api/refresh` | Refresh all local data (history + skills) |
+| GET | `/api/health` | Health check |
+| GET/POST | `/api/config` | Read/write settings (GitHub token) |
+
+## Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes with clear messages
+4. Push to the branch and open a Pull Request
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/stats/overview` | Dashboard overview (total skills, calls, top 5, insights) |
+| GET | `/api/stats/trend?range=30d` | Call trend data (7d/30d/90d) |
+| GET | `/api/skills` | List all local skills with stats |
+| GET | `/api/discover` | Browse online skill catalog (supports filtering & pagination) |
+| GET | `/api/discover/detail/:name` | Skill detail with enriched description |
+| POST | `/api/refresh` | Trigger data refresh |
+| GET | `/api/health` | Health check |
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 

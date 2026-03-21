@@ -20,6 +20,10 @@ function SkillRow({ skill, onSelect, t, sourceLabel }) {
     <tr
       className="border-b border-zinc-800 hover:bg-zinc-900/50 cursor-pointer transition-colors"
       onClick={() => onSelect(skill)}
+      onKeyDown={e => e.key === 'Enter' && onSelect(skill)}
+      tabIndex={0}
+      role="button"
+      aria-label={skill.invokeCommand || '/' + skill.name}
     >
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
@@ -71,14 +75,14 @@ function SkillDetail({ skill, onClose, onRefresh, t, sourceLabel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-end z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex justify-end z-50" onClick={onClose} role="dialog" aria-modal="true" aria-label={skill.invokeCommand || '/' + skill.name}>
       <div
         className="w-full max-w-lg bg-zinc-900 border-l border-zinc-800 h-full overflow-y-auto p-6"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-zinc-100">{skill.invokeCommand || '/' + skill.name}</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-xl">&times;</button>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-xl" aria-label="Close">&times;</button>
         </div>
 
         <div className="space-y-4">

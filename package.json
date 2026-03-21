@@ -8,9 +8,17 @@
     "dev": "node server/index.js",
     "dev:client": "cd client && npm run dev",
     "build": "cd client && npm run build",
-    "setup": "npm install && cd client && npm install --legacy-peer-deps && npm run build"
+    "setup": "npm install && cd client && npm install --legacy-peer-deps && npm run build",
+    "test": "jest --testPathPatterns=server/__tests__",
+    "lint": "node -e \"require('./eslint.config.js')\" && echo 'ESLint config OK'"
   },
-  "keywords": ["claude-code", "skill-manager", "plugin", "claude", "anthropic"],
+  "keywords": [
+    "claude-code",
+    "skill-manager",
+    "plugin",
+    "claude",
+    "anthropic"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,5 +27,8 @@
   "homepage": "https://github.com/kommxp/claude-code-skill-manager#readme",
   "dependencies": {
     "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0"
   }
 }

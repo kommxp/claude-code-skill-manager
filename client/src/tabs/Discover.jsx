@@ -102,7 +102,7 @@ function DetailPanel({ skill, onClose, lang, enums }) {
   const showZh = lang === 'zh'
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose} role="dialog" aria-modal="true" aria-label={skill.name}>
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-xl bg-zinc-900 border-l border-zinc-700 h-full overflow-y-auto shadow-2xl animate-slide-in"
@@ -129,6 +129,7 @@ function DetailPanel({ skill, onClose, lang, enums }) {
           <button
             onClick={onClose}
             className="ml-4 text-zinc-500 hover:text-zinc-200 text-xl leading-none p-1"
+            aria-label="Close"
           >
             ✕
           </button>
@@ -478,6 +479,10 @@ export default function Discover() {
           <div
             key={`${skill.source}--${skill.name}`}
             onClick={() => setSelected(skill)}
+            onKeyDown={e => e.key === 'Enter' && setSelected(skill)}
+            tabIndex={0}
+            role="button"
+            aria-label={skill.name}
             className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex flex-col gap-3 cursor-pointer hover:border-zinc-600 hover:bg-zinc-800/50 transition-colors"
           >
             {/* Header */}

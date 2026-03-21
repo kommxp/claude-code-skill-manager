@@ -17,6 +17,14 @@ const IDLE_TIMEOUT = 30 * 60 * 1000; // Auto-close after 30 min of inactivity (3
 const app = express();
 app.use(express.json());
 
+// Security headers (安全响应头)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
 // CORS: only allow same-origin localhost requests (仅允许同源 localhost 请求)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
