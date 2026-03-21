@@ -21,7 +21,7 @@ A local dashboard for managing, discovering, and analyzing [Claude Code](https:/
 
 ```bash
 # Clone
-git clone https://github.com/your-username/claude-code-skill-manager.git
+git clone https://github.com/kommxp/claude-code-skill-manager.git
 cd claude-code-skill-manager
 
 # Install dependencies & start

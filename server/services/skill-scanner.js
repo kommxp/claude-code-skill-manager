@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { SKILLS_DIR, PLUGINS_DIR, CONFIG_FILE, toPosix } = require('../utils/paths');
+const { SKILLS_DIR, PLUGINS_DIR, toPosix } = require('../utils/paths');
 const { parseFrontmatter } = require('../utils/frontmatter');
+const { loadConfig, saveConfig } = require('../utils/config');
 
 /**
  * Scan all local skills/commands/plugins, return unified array (扫描所有本地 skill/command/plugin，返回统一数组)
@@ -403,22 +404,14 @@ function safeReaddirFiles(dirPath, ext) {
 }
 
 function loadDisabledList() {
-  if (!fs.existsSync(CONFIG_FILE)) return [];
-  try {
-    const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-    return config.disabledSkills || [];
-  } catch {
-    return [];
-  }
+  const config = loadConfig();
+  return config.disabledSkills || [];
 }
 
 function saveDisabledList(disabledSkills) {
-  let config = {};
-  if (fs.existsSync(CONFIG_FILE)) {
-    try { config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8')); } catch {}
-  }
+  const config = loadConfig();
   config.disabledSkills = disabledSkills;
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+  saveConfig(config);
 }
 
 /**

@@ -178,15 +178,6 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
-function loadConfig() {
-  const fs = require('fs');
-  const { CONFIG_FILE } = require('../utils/paths');
-  if (!fs.existsSync(CONFIG_FILE)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-  } catch {
-    return {};
-  }
-}
+const { loadConfig } = require('../utils/config');
 
 module.exports = router;

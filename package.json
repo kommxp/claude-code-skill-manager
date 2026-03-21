@@ -14,9 +14,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/claude-code-skill-manager"
+    "url": "https://github.com/kommxp/claude-code-skill-manager"
   },
-  "homepage": "https://github.com/your-username/claude-code-skill-manager#readme",
+  "homepage": "https://github.com/kommxp/claude-code-skill-manager#readme",
   "dependencies": {
     "express": "^4.21.0"
   }

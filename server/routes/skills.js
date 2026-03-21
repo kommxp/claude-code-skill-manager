@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const { loadDisabledList, saveDisabledList } = require('../services/skill-scanner');
 const { batchTranslate, batchUseCases, getCacheStats } = require('../services/translator');
 const router = express.Router();
@@ -138,14 +138,19 @@ router.post('/:id/open', (req, res) => {
   }
 
   const filePath = skill.filePath.replace(/\//g, path.sep);
-  const cmd = process.platform === 'win32' ? `code "${filePath}"` : `open "${filePath}"`;
 
-  exec(cmd, (err) => {
-    if (err) {
-      return res.status(500).json({ error: `Failed to open: ${err.message}` });
-    }
+  // Use execFile/spawn with shell:false to prevent command injection (使用 execFile/spawn + shell:false 防止命令注入)
+  const onErr = (err) => {
+    if (err) return res.status(500).json({ error: `Failed to open: ${err.message}` });
     res.json({ ok: true });
-  });
+  };
+  if (process.platform === 'win32') {
+    execFile('code', [filePath], onErr);
+  } else if (process.platform === 'darwin') {
+    execFile('open', [filePath], onErr);
+  } else {
+    execFile('xdg-open', [filePath], onErr);
+  }
 });
 
 // POST /api/skills/:id/toggle — Enable/disable (custom only) (启用/禁用（仅用户自建）)

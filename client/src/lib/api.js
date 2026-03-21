@@ -2,7 +2,16 @@ const BASE = '/api';
 
 async function fetchJSON(url) {
   const res = await fetch(BASE + url);
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    // Try to parse server error message for better UX (尝试解析服务端错误信息以改善用户体验)
+    try {
+      const body = await res.json();
+      throw new Error(body.error || `API error: ${res.status}`);
+    } catch (e) {
+      if (e.message && e.message !== `API error: ${res.status}`) throw e;
+      throw new Error(`API error: ${res.status}`);
+    }
+  }
   return res.json();
 }
 

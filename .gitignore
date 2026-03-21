@@ -4,6 +4,7 @@ tmp-*.txt
 PRD.md
 .env
 .env.*
+!.env.example
 .DS_Store
 .idea/
 .vscode/
@@ -11,3 +12,6 @@ PRD.md
 *.bak
 *.swp
 *.swo
+Thumbs.db
+Desktop.ini
+github-review-report.md

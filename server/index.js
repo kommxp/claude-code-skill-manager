@@ -10,10 +10,24 @@ const statsRoutes = require('./routes/stats');
 const skillsRoutes = require('./routes/skills');
 const discoverRoutes = require('./routes/discover');
 
+const { loadConfig, saveConfig } = require('./utils/config');
+
 const BASE_PORT = parseInt(process.env.PORT) || 3200;
 const IDLE_TIMEOUT = 30 * 60 * 1000; // Auto-close after 30 min of inactivity (30 分钟无请求自动关闭)
 const app = express();
 app.use(express.json());
+
+// CORS: only allow same-origin localhost requests (仅允许同源 localhost 请求)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
 // ============================================================
 // Global data cache (runtime memory) (全局数据缓存（运行时内存）)
@@ -156,16 +170,11 @@ app.get('/api/config', (req, res) => {
 });
 
 app.post('/api/config', (req, res) => {
-  const fs = require('fs');
-  const { CONFIG_FILE } = require('./utils/paths');
-  let cfg = {};
-  if (fs.existsSync(CONFIG_FILE)) {
-    try { cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8')); } catch {}
-  }
+  const cfg = loadConfig();
   if (req.body.githubToken !== undefined) {
     cfg.githubToken = req.body.githubToken;
   }
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
+  saveConfig(cfg);
   res.json({ ok: true });
 });
 
@@ -251,16 +260,8 @@ async function start() {
   });
 }
 
-function loadStartupConfig() {
-  const fs = require('fs');
-  const { CONFIG_FILE } = require('./utils/paths');
-  if (!fs.existsSync(CONFIG_FILE)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-  } catch {
-    return {};
-  }
-}
+// loadStartupConfig is now loadConfig from utils/config (loadStartupConfig 现在使用 utils/config 的 loadConfig)
+const loadStartupConfig = loadConfig;
 
 start().catch(err => {
   console.error('Startup failed:', err);
