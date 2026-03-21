@@ -2,6 +2,7 @@ const express = require('express');
 const { getOnlineSkills, getCategories, markInstalled } = require('../services/discover');
 const { applyDescriptions, getSkillDetail } = require('../services/enricher');
 const { applyTags, tagSkill, getTagEnums } = require('../services/tagger');
+const { loadConfig } = require('../utils/config');
 const router = express.Router();
 
 // GET /api/discover — Online skill catalog (在线 skill 目录)
@@ -177,7 +178,5 @@ router.post('/refresh', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
-const { loadConfig } = require('../utils/config');
 
 module.exports = router;

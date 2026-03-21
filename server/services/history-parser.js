@@ -15,10 +15,12 @@ function getBuiltinCommands() {
     const { execSync } = require('child_process');
     let cliPath = null;
     try {
-      const npmRoot = execSync('npm root -g', { encoding: 'utf-8' }).trim();
+      const npmRoot = execSync('npm root -g', { encoding: 'utf-8', timeout: 5000 }).trim();
       cliPath = path2.join(npmRoot, '@anthropic-ai', 'claude-code', 'cli.js');
       if (!fs2.existsSync(cliPath)) cliPath = null;
-    } catch {}
+    } catch {
+      // npm not available or command timed out — skip builtin extraction (npm 不可用或命令超时 — 跳过内置命令提取)
+    }
     if (cliPath) {
       const source = fs2.readFileSync(cliPath, 'utf-8');
       // Match type:"local-jsx",name:"xxx" — the precise marker for built-in commands (匹配 type:"local-jsx",name:"xxx" — 这是内置命令的准确标记)

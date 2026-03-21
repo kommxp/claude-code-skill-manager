@@ -425,20 +425,24 @@ function extractBuiltinCommands() {
   // Find claude's cli.js path (找到 claude 的 cli.js 路径)
   let cliPath = null;
   try {
-    const npmRoot = execSync('npm root -g', { encoding: 'utf-8' }).trim();
+    const npmRoot = execSync('npm root -g', { encoding: 'utf-8', timeout: 5000 }).trim();
     const candidate = path.join(npmRoot, '@anthropic-ai', 'claude-code', 'cli.js');
     if (fs.existsSync(candidate)) cliPath = candidate;
-  } catch {}
+  } catch {
+    // npm not available or timed out (npm 不可用或超时)
+  }
 
   // Alternative: infer from which claude (备选：通过 which claude 推断)
   if (!cliPath) {
     try {
-      const claudePath = execSync('which claude', { encoding: 'utf-8' }).trim();
+      const claudePath = execSync('which claude', { encoding: 'utf-8', timeout: 5000 }).trim();
       // claude is usually npm/claude -> ../node_modules/@anthropic-ai/claude-code/cli.js
       const dir = path.dirname(path.dirname(claudePath));
       const candidate = path.join(dir, 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js');
       if (fs.existsSync(candidate)) cliPath = candidate;
-    } catch {}
+    } catch {
+      // which command not available or timed out (which 命令不可用或超时)
+    }
   }
 
   if (!cliPath) {

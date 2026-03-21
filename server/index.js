@@ -218,11 +218,14 @@ function findAvailablePort(basePort) {
  * Open browser (打开浏览器)
  */
 function openBrowser(url) {
-  const { exec } = require('child_process');
-  const cmd = process.platform === 'win32' ? `start "" "${url}"`
-    : process.platform === 'darwin' ? `open "${url}"`
-    : `xdg-open "${url}"`;
-  exec(cmd, () => {});
+  const { execFile } = require('child_process');
+  if (process.platform === 'win32') {
+    execFile('cmd', ['/c', 'start', '', url], () => {});
+  } else if (process.platform === 'darwin') {
+    execFile('open', [url], () => {});
+  } else {
+    execFile('xdg-open', [url], () => {});
+  }
 }
 
 async function start() {
