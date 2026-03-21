@@ -1,3 +1,5 @@
+[English](#) | [中文](README_zh.md)
+
 # Claude Code Skill Manager
 
 A local dashboard for managing, discovering, and analyzing [Claude Code](https://claude.ai/code) skills and plugins.
@@ -128,28 +130,6 @@ Contributions are welcome! Please:
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Commit your changes with clear messages
 4. Push to the branch and open a Pull Request
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/stats/overview` | Dashboard overview (total skills, calls, top 5, insights) |
-| GET | `/api/stats/trend?range=30d` | Call trend data (7d/30d/90d) |
-| GET | `/api/skills` | List all local skills with stats |
-| GET | `/api/discover` | Browse online skill catalog (supports filtering & pagination) |
-| GET | `/api/discover/detail/:name` | Skill detail with enriched description |
-| POST | `/api/refresh` | Trigger data refresh |
-| GET | `/api/health` | Health check |
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
