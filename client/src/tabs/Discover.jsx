@@ -22,6 +22,9 @@ export default function Discover() {
     return ['', 'hot', 'recent', 'name'].includes(saved) ? saved : ''
   })
   const [refreshing, setRefreshing] = useState(false)
+  const [aiSearching, setAiSearching] = useState(false)
+  const [aiQuery, setAiQuery] = useState('')
+  const [isAiResult, setIsAiResult] = useState(false)
   const [selected, setSelected] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -88,7 +91,34 @@ export default function Discover() {
 
   const handleSearch = (e) => {
     e.preventDefault()
+    if (isAiResult) clearAiSearch()
     loadSkills()
+  }
+
+  const handleAiSearch = async (e) => {
+    e.preventDefault()
+    if (!search.trim()) return
+    setAiSearching(true)
+    setError(null)
+    try {
+      const res = await api.discoverAiSearch(search.trim(), lang)
+      setSkills(res.skills || [])
+      setTotal(res.total || 0)
+      setHasMore(false)
+      setIsAiResult(true)
+      setAiQuery(search.trim())
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setAiSearching(false)
+    }
+  }
+
+  const clearAiSearch = () => {
+    setIsAiResult(false)
+    setAiQuery('')
+    setSearch('')
+    load()
   }
 
   const handleRefresh = async () => {
@@ -111,9 +141,62 @@ export default function Discover() {
 
   return (
     <div className="space-y-4">
-      {/* Title + Sort + Filters */}
+      {/* Title + AI Search */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-zinc-100">{t('discover.title')}</h2>
+
+        {/* AI Search Bar (AI 自然语言搜索栏) */}
+        <form onSubmit={handleAiSearch} className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={lang === 'zh' ? '用自然语言描述你想找的技能，如"优化网页UI"...' : 'Describe what you need, e.g. "optimize web UI"...'}
+              className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-lg pl-4 pr-10 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => { setSearch(''); if (isAiResult) clearAiSearch() }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={aiSearching || !search.trim()}
+            className="h-10 px-4 text-sm bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-800 disabled:text-zinc-600 rounded-lg text-white font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
+          >
+            {aiSearching
+              ? (lang === 'zh' ? 'AI 搜索中...' : 'AI Searching...')
+              : (lang === 'zh' ? 'AI 搜索' : 'AI Search')}
+          </button>
+          <button
+            type="button"
+            onClick={handleSearch}
+            disabled={!search.trim()}
+            className="h-10 px-3 text-sm bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:text-zinc-700 rounded-lg text-zinc-300 transition-colors whitespace-nowrap"
+          >
+            {lang === 'zh' ? '关键词' : 'Keyword'}
+          </button>
+        </form>
+
+        {/* AI search result banner (AI 搜索结果横幅) */}
+        {isAiResult && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-violet-900/20 border border-violet-800/50 rounded-lg">
+            <span className="text-xs text-violet-300">
+              {lang === 'zh'
+                ? `AI 搜索「${aiQuery}」找到 ${total} 个相关技能`
+                : `AI search "${aiQuery}" found ${total} relevant skills`}
+            </span>
+            <button onClick={clearAiSearch} className="text-xs text-violet-400 hover:text-violet-200 ml-auto">
+              {lang === 'zh' ? '清除 AI 搜索' : 'Clear AI search'}
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 items-center">
           <select

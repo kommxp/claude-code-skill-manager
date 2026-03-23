@@ -18,7 +18,7 @@ function scanAllSkills() {
   const errors = [];
   const disabledSkills = loadDisabledList();
 
-  // 0. Claude Code built-in commands (dynamically extracted from cli.js source) (Claude Code 内置命令（从 cli.js 源码动态提取）)
+  // 0a. Claude Code built-in commands (dynamically extracted from cli.js source) (Claude Code 内置命令（从 cli.js 源码动态提取）)
   const bundledSkills = extractBuiltinCommands();
   for (const b of bundledSkills) {
     skills.push({
@@ -32,6 +32,31 @@ function scanAllSkills() {
       category: null,
       keywords: [],
       userInvocable: true,
+      disableModelInvocation: false,
+      allowedTools: [],
+      enabled: true,
+      filePath: null,
+      content: '',
+      stats: null,
+    });
+  }
+
+  // 0b. Claude Code built-in skills (registered via Qw() in cli.js) (Claude Code 内置 skill（通过 Qw() 在 cli.js 中注册）)
+  const builtinSkills = extractBuiltinSkills();
+  for (const b of builtinSkills) {
+    // Skip if already added as bundled command (跳过已作为 bundled command 添加的)
+    if (skills.some(s => s.name === b.name)) continue;
+    skills.push({
+      id: `bundled--${b.name}`,
+      name: b.name,
+      description: b.description,
+      version: null,
+      author: { name: 'Anthropic' },
+      source: 'bundled',
+      type: 'skill',
+      category: null,
+      keywords: [],
+      userInvocable: b.userInvocable,
       disableModelInvocation: false,
       allowedTools: [],
       enabled: true,
@@ -480,6 +505,55 @@ function extractBuiltinCommands() {
     return commands;
   } catch (e) {
     console.log(`[skill-scanner] Built-in command extraction failed: ${e.message}`);
+    return [];
+  }
+}
+
+/**
+ * Extract built-in skills registered via Qw() in cli.js (从 cli.js 中提取通过 Qw() 注册的内置 skill)
+ * These are skills like simplify, batch, loop, schedule etc. that are compiled into Claude Code
+ * (这些是编译进 Claude Code 的 skill，如 simplify、batch、loop、schedule 等)
+ */
+function extractBuiltinSkills() {
+  const { execSync } = require('child_process');
+
+  let cliPath = null;
+  try {
+    const npmRoot = execSync('npm root -g', { encoding: 'utf-8', timeout: 5000 }).trim();
+    const candidate = path.join(npmRoot, '@anthropic-ai', 'claude-code', 'cli.js');
+    if (fs.existsSync(candidate)) cliPath = candidate;
+  } catch {}
+
+  if (!cliPath) {
+    try {
+      const claudePath = execSync('which claude', { encoding: 'utf-8', timeout: 5000 }).trim();
+      const dir = path.dirname(path.dirname(claudePath));
+      const candidate = path.join(dir, 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js');
+      if (fs.existsSync(candidate)) cliPath = candidate;
+    } catch {}
+  }
+
+  if (!cliPath) return [];
+
+  try {
+    const source = fs.readFileSync(cliPath, 'utf-8');
+
+    // Match Qw({name:"xxx",description:"xxx",...}) registrations (匹配 Qw() 注册的 skill)
+    const re = /Qw\(\{name:"([^"]+)",description:"([^"]*)"(?:,userInvocable:(!0|!1|true|false))?/g;
+    const skills = [];
+    let m;
+    while ((m = re.exec(source)) !== null) {
+      skills.push({
+        name: m[1],
+        description: m[2].replace(/\\n/g, ' '),
+        userInvocable: m[3] !== '!1' && m[3] !== 'false', // Default true (默认可调用)
+      });
+    }
+
+    console.log(`[skill-scanner] Extracted ${skills.length} built-in skills (Qw) from cli.js`);
+    return skills;
+  } catch (e) {
+    console.log(`[skill-scanner] Built-in skill extraction failed: ${e.message}`);
     return [];
   }
 }

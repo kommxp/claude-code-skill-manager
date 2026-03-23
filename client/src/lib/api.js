@@ -37,6 +37,11 @@ export const api = {
   discoverCategories: () => fetchJSON('/discover/categories'),
   discoverEnums: () => fetchJSON('/discover/enums'),
   discoverDetail: (name) => fetchJSON(`/discover/detail?name=${encodeURIComponent(name)}`),
+  discoverAiSearch: (query, lang) => fetch(`${BASE}/discover/ai-search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, lang }),
+  }).then(r => r.ok ? r.json() : r.json().then(b => { throw new Error(b.error) })),
   discoverRefresh: () => fetch(`${BASE}/discover/refresh`, { method: 'POST' }).then(r => r.json()),
   getConfig: () => fetchJSON('/config'),
   saveConfig: (data) => fetch(`${BASE}/config`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),

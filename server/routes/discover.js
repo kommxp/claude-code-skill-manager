@@ -3,6 +3,7 @@ const { getOnlineSkills, getCategories, markInstalled } = require('../services/d
 const { applyDescriptions, getSkillDetail } = require('../services/enricher');
 const { applyTags, tagSkill, getTagEnums } = require('../services/tagger');
 const { loadConfig } = require('../utils/config');
+const { callClaude, parseClaudeJson } = require('../utils/claude-cli');
 const router = express.Router();
 
 // GET /api/discover — Online skill catalog (在线 skill 目录)
@@ -163,6 +164,76 @@ router.get('/categories', async (req, res) => {
     // Apply tags first then count, to ensure consistency with list page filtering (先 applyTags 再统计，保证和列表页筛选一致)
     applyTags(skills, req.query.lang || 'en');
     res.json(getCategories(skills));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/discover/ai-search — AI natural language search (AI 自然语言搜索)
+router.post('/ai-search', async (req, res) => {
+  const { query, lang } = req.body;
+  if (!query || !query.trim()) {
+    return res.status(400).json({ error: 'query is required' });
+  }
+
+  try {
+    const config = loadConfig();
+    let skills = await getOnlineSkills(config.githubToken);
+    applyDescriptions(skills);
+    applyTags(skills, lang || 'en');
+
+    // Build a compact skill index for Claude (构建精简的 skill 索引给 Claude)
+    // Only send top 500 by score to avoid prompt overflow (只发前 500 个高分 skill，避免 prompt 过长)
+    const topSkills = skills
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, 500);
+
+    const skillIndex = topSkills.map((s, i) =>
+      `[${i}] ${s.name} | ${s.category || ''} | ${(s.description || '').slice(0, 80)}`
+    ).join('\n');
+
+    const prompt = `You are a skill search engine. The user is looking for Claude Code skills using natural language.
+
+User query: "${query.trim()}"
+
+Here is the skill catalog (index | name | category | description):
+${skillIndex}
+
+Find the most relevant skills for the user's query. Consider:
+- Semantic meaning (not just keyword matching)
+- The user may describe a use case, not a skill name
+- Match by purpose, not just by name
+
+Return ONLY a JSON array of the matching skill indices (numbers), ordered by relevance, max 30 results.
+Example: [42, 15, 7, 103]
+
+If no skills match, return: []`;
+
+    const text = await callClaude(prompt, { model: 'haiku' });
+    let indices;
+    try {
+      indices = parseClaudeJson(text);
+    } catch {
+      // If JSON parse fails, try extracting array from text (JSON 解析失败时尝试从文本中提取数组)
+      const match = text.match(/\[[\d,\s]*\]/);
+      indices = match ? JSON.parse(match[0]) : [];
+    }
+
+    if (!Array.isArray(indices)) indices = [];
+
+    // Map indices back to skills, mark installed (将索引映射回 skill，标注已安装状态)
+    const matched = indices
+      .filter(i => i >= 0 && i < topSkills.length)
+      .map(i => topSkills[i]);
+
+    const result = markInstalled(matched, req.cache.skills);
+
+    res.json({
+      skills: result,
+      total: result.length,
+      query: query.trim(),
+      aiPowered: true,
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
